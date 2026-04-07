@@ -378,6 +378,36 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
     return standardOptions
   }
 
+  // CoStrict provider: 从缓存中动态展示 CoStrict 可用模型
+  if (getAPIProvider() === 'costrict') {
+    // 延迟 require 避免循环依赖，且该模块只在 costrict provider 下加载
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCachedCoStrictModels } = require('../../costrict/provider/models.js') as typeof import('../../costrict/provider/models.js')
+    const cachedModels = getCachedCoStrictModels()
+    if (cachedModels.length > 0) {
+      const sorted = [...cachedModels].sort((a, b) => a.id.localeCompare(b.id))
+      return sorted.map(m => {
+        const description =
+          m.id === 'Auto'
+            ? `${Math.round((m.creditDiscount ?? 0) * 100)}% discount`
+            : `${m.creditConsumption ?? '?'}x credit`
+        return {
+          value: m.id,
+          label: m.id,
+          description,
+        }
+      })
+    }
+    // 缓存尚未加载（凭证过期或首次加载中），提示用户重新登录
+    return [
+      {
+        value: null,
+        label: 'CoStrict (not logged in)',
+        description: 'Run /login to sign in with CoStrict again',
+      },
+    ]
+  }
+
   // PAYG 1P API: Default (Sonnet) + Sonnet 1M + Opus 4.6 + Opus 1M + Haiku
   if (getAPIProvider() === 'firstParty') {
     const payg1POptions = [getDefaultOptionForUser(fastMode)]
