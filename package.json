@@ -38,6 +38,7 @@
     "scripts/postinstall.cjs"
   ],
   "scripts": {
+    "prebuild": "bun run scripts/generate-skills.ts",
     "build": "bun run build.ts",
     "dev": "bun run scripts/dev.ts",
     "dev:inspect": "bun run scripts/dev-debug.ts",
@@ -50,7 +51,8 @@
     "check:unused": "knip-bun",
     "health": "bun run scripts/health-check.ts",
     "postinstall": "node scripts/postinstall.cjs",
-    "docs:dev": "npx mintlify dev"
+    "docs:dev": "npx mintlify dev",
+    "generate:skills": "bun run scripts/generate-skills.ts"
   },
   "dependencies": {},
   "devDependencies": {

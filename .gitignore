@@ -10,6 +10,7 @@ coverage
 *.lock
 *.exe
 src/utils/vendor/
+.tmp/
 
 # AI tool runtime directories
 .agents/

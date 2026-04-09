@@ -6,7 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!!**/dist", "!!**/packages/@ant"]
+		"includes": ["**", "!!**/dist", "!!**/packages/@ant", "!!**/src/costrict/skill/builtin.ts"]
 	},
 	"formatter": {
 		"enabled": true,
