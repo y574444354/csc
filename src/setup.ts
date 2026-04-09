@@ -46,6 +46,7 @@ import type { PermissionMode } from './utils/permissions/PermissionMode.js'
 import { getPlanSlug } from './utils/plans.js'
 import { saveWorktreeState } from './utils/sessionStorage.js'
 import { profileCheckpoint } from './utils/startupProfiler.js'
+import { getAPIProvider } from './utils/model/providers.js'
 import {
   createTmuxSessionForWorktree,
   createWorktreeForSession,
@@ -379,6 +380,68 @@ export async function setup(
 
   void prefetchApiKeyFromApiKeyHelperIfSafe(getIsNonInteractiveSession()) // Prefetch safely - only executes if trust already confirmed
   profileCheckpoint('setup_after_prefetch')
+
+  // CoStrict provider: 启动时恢复凭证并预取模型列表
+  if (getAPIProvider() === 'costrict') {
+    void (async () => {
+      try {
+        const { loadCoStrictCredentials, saveCoStrictCredentials } = await import('./costrict/provider/credentials.js')
+        const { isCoStrictTokenValid, refreshCoStrictToken, extractExpiryFromJWT } = await import('./costrict/provider/token.js')
+        const { fetchCoStrictModels } = await import('./costrict/provider/models.js')
+        const { getCoStrictBaseURL } = await import('./costrict/provider/auth.js')
+
+        const creds = await loadCoStrictCredentials()
+        if (!creds) {
+          // 没有凭证，清除 modelType 让下次启动回到登录界面
+          const { updateSettingsForSource } = await import('./utils/settings/settings.js')
+          updateSettingsForSource('userSettings', { modelType: undefined } as any)
+          return
+        }
+
+        // 验证 / 刷新 token（注意 refreshCoStrictToken 接收 RefreshTokenParams，字段名与 CoStrictCredentials 不同）
+        let activeCreds = creds
+        if (!isCoStrictTokenValid(creds)) {
+          if (creds.refresh_token) {
+            try {
+              const refreshed = await refreshCoStrictToken({
+                baseUrl: getCoStrictBaseURL(creds.base_url),
+                refreshToken: creds.refresh_token,
+                state: creds.state,
+              })
+              activeCreds = {
+                ...creds,
+                access_token: refreshed.access_token,
+                refresh_token: refreshed.refresh_token,
+                expiry_date: extractExpiryFromJWT(refreshed.access_token),
+                updated_at: new Date().toISOString(),
+              }
+              await saveCoStrictCredentials(activeCreds)
+            } catch {
+              // 刷新失败，清除 modelType 提示重新登录
+              const { updateSettingsForSource } = await import('./utils/settings/settings.js')
+              updateSettingsForSource('userSettings', { modelType: undefined } as any)
+              return
+            }
+          } else {
+            // 无 refresh_token，清除 modelType
+            const { updateSettingsForSource } = await import('./utils/settings/settings.js')
+            updateSettingsForSource('userSettings', { modelType: undefined } as any)
+            return
+          }
+        }
+
+        // 预取模型列表，填充同步缓存
+        const baseUrl = getCoStrictBaseURL(activeCreds.base_url)
+        const models = await fetchCoStrictModels(baseUrl, activeCreds.access_token)
+        if (models.length > 0 && !process.env.COSTRICT_MODEL) {
+          process.env.COSTRICT_MODEL = models[0].id
+        }
+        process.env.CLAUDE_CODE_USE_COSTRICT = '1'
+      } catch {
+        // 初始化失败不阻断启动
+      }
+    })()
+  }
 
   // Pre-fetch data for Logo v2 - await to ensure it's ready before logo renders.
   // --bare / SIMPLE: skip — release notes are interactive-UI display data,

@@ -16,7 +16,8 @@ import { getSettings_DEPRECATED, updateSettingsForSource } from '../utils/settin
 import { Select } from './CustomSelect/select.js'
 import { Spinner } from './Spinner.js'
 import TextInput from './TextInput.js'
-import { fi } from 'zod/v4/locales'
+import { ModelPicker } from './ModelPicker.js'
+import { useSetAppState } from '../state/AppState.js'
 
 type Props = {
   onDone(): void
@@ -28,6 +29,14 @@ type Props = {
 type OAuthStatus =
   | { state: 'idle' } // Initial state, waiting to select login method
   | { state: 'platform_setup' } // Show platform setup info (Bedrock/Vertex/Foundry)
+  | {
+      state: 'costrict_waiting'
+      url: string
+    } // CoStrict OAuth: browser opened, waiting for user to login
+  | {
+      state: 'costrict_model_select'
+      models: Array<{ id: string; name?: string }>
+    } // CoStrict: login done, select a model
   | {
       state: 'custom_platform'
       baseUrl: string
@@ -73,6 +82,7 @@ export function ConsoleOAuthFlow({
   mode = 'login',
   forceLoginMethod: forceLoginMethodProp,
 }: Props): React.ReactNode {
+  const setAppState = useSetAppState()
   const settings = getSettings_DEPRECATED() || {}
   const forceLoginMethod = forceLoginMethodProp ?? settings.forceLoginMethod
   const orgUUID = settings.forceLoginOrgUUID
@@ -273,6 +283,8 @@ export function ConsoleOAuthFlow({
         }
         // Reset modelType to anthropic when using OAuth login
         updateSettingsForSource('userSettings', { modelType: 'anthropic' } as any)
+        delete process.env.CLAUDE_CODE_USE_COSTRICT
+        setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
 
         setOAuthStatus({ state: 'success' })
         void sendNotification(
@@ -438,6 +450,7 @@ function OAuthStatusMessage({
   setLoginWithClaudeAi,
   onDone,
 }: OAuthStatusMessageProps): React.ReactNode {
+  const setAppState = useSetAppState()
   switch (oauthStatus.state) {
     case 'idle':
       return (
@@ -453,6 +466,16 @@ function OAuthStatusMessage({
           <Box>
             <Select
               options={[
+                {
+                  label: (
+                    <Text>
+                      CoStrict ·{' '}
+                      <Text dimColor>Sign in with CoStrict account</Text>
+                      {'\n'}
+                    </Text>
+                  ),
+                  value: 'costrict',
+                },
                 {
                   label: (
                     <Text>
@@ -530,7 +553,70 @@ function OAuthStatusMessage({
                 },
               ]}
               onChange={value => {
-                if (value === 'custom_platform') {
+                if (value === 'costrict') {
+                  void (async () => {
+                    try {
+                      const { generateState, getCoStrictBaseURL, buildCoStrictLoginURL, pollLoginToken } = await import('../costrict/provider/auth.js')
+                      const { generateMachineId, saveCoStrictCredentials } = await import('../costrict/provider/credentials.js')
+                      const { extractExpiryFromJWT } = await import('../costrict/provider/token.js')
+                      const { updateSettingsForSource } = await import('../utils/settings/settings.js')
+
+                      const baseUrl = getCoStrictBaseURL()
+                      const state = generateState()
+                      const machineId = generateMachineId()
+                      const loginUrl = buildCoStrictLoginURL(baseUrl, state, machineId)
+
+                      // 打开浏览器（复用 csc 的 openBrowser，Windows 用 rundll32 url,OpenURL 避免 & 被 cmd.exe 截断）
+                      const { openBrowser } = await import('../utils/browser.js')
+                      await openBrowser(loginUrl)
+
+                      setOAuthStatus({ state: 'costrict_waiting', url: loginUrl })
+
+                      // 轮询等待登录完成
+                      const tokens = await pollLoginToken(baseUrl, state, machineId)
+
+                      // 保存凭证
+                      const expiryDate = extractExpiryFromJWT(tokens.access_token)
+                      await saveCoStrictCredentials({
+                        id: 'csc',
+                        name: 'CSC Auth',
+                        access_token: tokens.access_token,
+                        refresh_token: tokens.refresh_token,
+                        state,
+                        machine_id: machineId,
+                        base_url: baseUrl,
+                        expiry_date: expiryDate,
+                        updated_at: new Date().toISOString(),
+                        expired_at: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+                      })
+
+                      // 设置 modelType 为 costrict
+                      updateSettingsForSource('userSettings', { modelType: 'costrict' as any } as any)
+                      process.env.CLAUDE_CODE_USE_COSTRICT = '1'
+
+                      // 预取模型列表，填充同步缓存，并进入模型选择界面
+                      try {
+                        const { fetchCoStrictModels } = await import('../costrict/provider/models.js')
+                        const models = await fetchCoStrictModels(baseUrl, tokens.access_token)
+                        if (models.length > 0) {
+                          setOAuthStatus({ state: 'costrict_model_select', models })
+                          return
+                        }
+                      } catch {
+                        // 预取失败，直接进入 success
+                      }
+
+                      setOAuthStatus({ state: 'success' })
+                      void onDone()
+                    } catch (err: any) {
+                      setOAuthStatus({
+                        state: 'error',
+                        message: err.message || String(err),
+                        toRetry: { state: 'idle' },
+                      })
+                    }
+                  })()
+                } else if (value === 'custom_platform') {
                   logEvent('tengu_custom_platform_selected', {})
                   setOAuthStatus({
                     state: 'custom_platform',
@@ -696,10 +782,12 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
-        }, [activeField, inputValue, displayValues, setOAuthStatus, onDone])
+        }, [activeField, inputValue, displayValues, setOAuthStatus, onDone, setAppState])
 
         const handleEnter = useCallback(() => {
           const idx = FIELDS.indexOf(activeField)
@@ -916,10 +1004,12 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
-        }, [activeField, openaiInputValue, openaiDisplayValues, setOAuthStatus, onDone])
+        }, [activeField, openaiInputValue, openaiDisplayValues, setOAuthStatus, onDone, setAppState])
 
         const handleOpenAIEnter = useCallback(() => {
           const idx = OPENAI_FIELDS.indexOf(activeField)
@@ -1149,10 +1239,12 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
-        }, [activeField, geminiInputValue, geminiDisplayValues, onDone, setOAuthStatus])
+        }, [activeField, geminiInputValue, geminiDisplayValues, onDone, setOAuthStatus, setAppState])
 
         const handleGeminiEnter = useCallback(() => {
           const idx = GEMINI_FIELDS.indexOf(activeField)
@@ -1274,6 +1366,44 @@ function OAuthStatusMessage({
           </Box>
         )
       }
+
+    case 'costrict_waiting':
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text>
+            Opening browser for CoStrict login. If it does not open
+            automatically, copy and paste this URL:
+          </Text>
+          <Box marginY={1}>
+            <Text color="cyan">{oauthStatus.url}</Text>
+          </Box>
+          <Text dimColor>Waiting for authentication...</Text>
+        </Box>
+      )
+
+    case 'costrict_model_select': {
+      const sortedModels = [...oauthStatus.models].sort((a, b) => a.id.localeCompare(b.id))
+      return (
+        <ModelPicker
+          initial={sortedModels[0]?.id ?? null}
+          headerText="Login successful. Select a CoStrict model to use:"
+          onSelect={(model) => {
+            const selected = model ?? sortedModels[0]?.id ?? ''
+            process.env.COSTRICT_MODEL = selected
+            setAppState(prev => ({ ...prev, mainLoopModel: selected, mainLoopModelForSession: null }))
+            setOAuthStatus({ state: 'success' })
+            void onDone()
+          }}
+          onCancel={() => {
+            const selected = sortedModels[0]?.id ?? ''
+            process.env.COSTRICT_MODEL = selected
+            setAppState(prev => ({ ...prev, mainLoopModel: selected, mainLoopModelForSession: null }))
+            setOAuthStatus({ state: 'success' })
+            void onDone()
+          }}
+        />
+      )
+    }
 
     case 'platform_setup':
       return (

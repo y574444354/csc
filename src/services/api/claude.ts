@@ -1356,6 +1356,12 @@ async function* queryModel(
     return
   }
 
+  if (getAPIProvider() === 'costrict') {
+    const { queryModelCoStrict } = await import('../../costrict/provider/index.js')
+    yield* queryModelCoStrict(messagesForAPI, systemPrompt, filteredTools, signal, options)
+    return
+  }
+
   // Instrumentation: Track message count after normalization
   logEvent('tengu_api_after_normalize', {
     postNormalizedMessageCount: messagesForAPI.length,

@@ -162,7 +162,7 @@ export async function showSetupScreens(
   stopCapturingEarlyInput()
 
   if (
-    "production" === 'test' ||
+    process.env.NODE_ENV === 'test' ||
     isEnvTruthy(false) ||
     process.env.IS_DEMO // Skip onboarding in demo mode
   ) {
