@@ -16,6 +16,10 @@ import { WIKI_PROJECT_ANALYZE_AGENT } from '../../costrict/agent/wikiProjectAnal
 import { WIKI_CATALOGUE_DESIGN_AGENT } from '../../costrict/agent/wikiCatalogueDesign.js'
 import { WIKI_DOCUMENT_GENERATE_AGENT } from '../../costrict/agent/wikiDocumentGenerate.js'
 import { WIKI_INDEX_GENERATION_AGENT } from '../../costrict/agent/wikiIndexGeneration.js'
+import { TDD_RUN_AND_FIX_AGENT } from '../../costrict/agent/tddRunAndFix.js'
+import { TDD_TEST_AND_FIX_AGENT } from '../../costrict/agent/tddTestAndFix.js'
+import { TDD_TEST_DESIGN_AGENT } from '../../costrict/agent/tddTestDesign.js'
+import { TDD_TEST_PREPARE_AGENT } from '../../costrict/agent/tddTestPrepare.js'
 import { STATUSLINE_SETUP_AGENT } from './built-in/statuslineSetup.js'
 import { VERIFICATION_AGENT } from './built-in/verificationAgent.js'
 import type { AgentDefinition } from './loadAgentsDir.js'
@@ -59,6 +63,10 @@ export function getBuiltInAgents(): AgentDefinition[] {
     WIKI_CATALOGUE_DESIGN_AGENT,
     WIKI_DOCUMENT_GENERATE_AGENT,
     WIKI_INDEX_GENERATION_AGENT,
+    TDD_RUN_AND_FIX_AGENT,
+    TDD_TEST_AND_FIX_AGENT,
+    TDD_TEST_DESIGN_AGENT,
+    TDD_TEST_PREPARE_AGENT,
   ]
 
   if (areExplorePlanAgentsEnabled()) {
