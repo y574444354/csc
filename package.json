@@ -52,7 +52,8 @@
     "health": "bun run scripts/health-check.ts",
     "postinstall": "node scripts/postinstall.cjs",
     "docs:dev": "npx mintlify dev",
-    "generate:skills": "bun run scripts/generate-skills.ts"
+    "generate:skills": "bun run scripts/generate-skills.ts",
+    "rcs": "bun run scripts/rcs.ts"
   },
   "dependencies": {},
   "devDependencies": {
