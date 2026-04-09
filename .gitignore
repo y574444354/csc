@@ -27,3 +27,7 @@ src/utils/vendor/
 __pycache__/
 *.pyc
 logs
+
+.costrict
+.claude
+/costrict
