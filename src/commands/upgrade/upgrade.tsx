@@ -41,7 +41,7 @@ export async function call(
       }
     }
 
-    const url = 'https://claude.ai/upgrade/max'
+    const url = 'https://costrict.ai/upgrade/max'
     await openBrowser(url)
 
     return (
@@ -60,7 +60,7 @@ export async function call(
     setTimeout(
       onDone,
       0,
-      'Failed to open browser. Please visit https://claude.ai/upgrade/max to upgrade.',
+      'Failed to open browser. Please visit https://costrict.ai/upgrade/max to upgrade.',
     )
   }
   return null

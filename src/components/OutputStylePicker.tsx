@@ -75,7 +75,7 @@ export function OutputStylePicker({
       <Box flexDirection="column" gap={1}>
         <Box marginTop={1}>
           <Text dimColor>
-            This changes how Claude Code communicates with you
+            This changes how CoStrict communicates with you
           </Text>
         </Box>
         {isLoading ? (

@@ -139,10 +139,7 @@ export function getDefaultOpusModel(): ModelName {
 export function getDefaultSonnetModel(): ModelName {
   const provider = getAPIProvider()
   // For OpenAI provider, check OPENAI_DEFAULT_SONNET_MODEL first
-  if (
-    provider === 'openai' &&
-    process.env.OPENAI_DEFAULT_SONNET_MODEL
-  ) {
+  if (provider === 'openai' && process.env.OPENAI_DEFAULT_SONNET_MODEL) {
     return process.env.OPENAI_DEFAULT_SONNET_MODEL
   }
   // For Gemini provider, check GEMINI_DEFAULT_SONNET_MODEL
@@ -611,6 +608,9 @@ export function modelDisplayString(model: ModelSetting): string {
 
 // @[MODEL LAUNCH]: Add a marketing name mapping for the new model below.
 export function getMarketingNameForModel(modelId: string): string | undefined {
+  if (!modelId) {
+    return undefined
+  }
   if (getAPIProvider() === 'foundry') {
     // deployment ID is user-defined in Foundry, so it may have no relation to the actual model
     return undefined

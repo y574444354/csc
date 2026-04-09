@@ -138,7 +138,7 @@ export function MCPSettings({ onComplete }: Props): React.ReactNode {
     // Only show "no servers" message if no regular servers AND no agent servers
     if (servers.length === 0 && agentMcpServers.length === 0) {
       onComplete(
-        'No MCP servers configured. Please run /doctor if this is unexpected. Otherwise, run `claude mcp --help` or visit https://code.claude.com/docs/en/mcp to learn more.',
+        'No MCP servers configured. Please run /doctor if this is unexpected. Otherwise, run `claude mcp --help` or visit https://costrict.ai/docs/en/mcp to learn more.',
       )
     }
   }, [
@@ -171,7 +171,7 @@ export function MCPSettings({ onComplete }: Props): React.ReactNode {
       const defaultTab =
         viewState.server.transport === 'claudeai-proxy'
           ? 'claude.ai'
-          : 'Claude Code'
+          : 'CoStrict'
 
       if (viewState.server.transport === 'stdio') {
         return (

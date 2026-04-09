@@ -56,7 +56,7 @@ export function AutoModeOptInDialog({
       <Box flexDirection="column" gap={1}>
         <Text>{AUTO_MODE_DESCRIPTION}</Text>
 
-        <Link url="https://code.claude.com/docs/en/security" />
+        <Link url="https://costrict.ai/docs/en/security" />
       </Box>
 
       <Select

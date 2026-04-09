@@ -41,14 +41,14 @@ export function TranscriptSharePrompt({
         <Text color="ansi:cyan">{BLACK_CIRCLE} </Text>
         <Text bold>
           Can Anthropic look at your session transcript to help us improve
-          Claude Code?
+          CoStrict?
         </Text>
       </Box>
 
       <Box marginLeft={2}>
         <Text dimColor>
           Learn more:
-          https://code.claude.com/docs/en/data-usage#session-quality-surveys
+          https://costrict.ai/docs/en/data-usage#session-quality-surveys
         </Text>
       </Box>
 

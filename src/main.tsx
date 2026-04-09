@@ -1343,7 +1343,7 @@ async function run(): Promise<CommanderCommand> {
 	program
 		.name("claude")
 		.description(
-			`Claude Code - starts an interactive session by default, use -p/--print for non-interactive output`,
+			`CoStrict - starts an interactive session by default, use -p/--print for non-interactive output`,
 		)
 		.argument("[prompt]", "Your prompt", String)
 		// Subcommands inherit helpOption via commander's copyInheritedSettings —
@@ -1750,7 +1750,7 @@ async function run(): Promise<CommanderCommand> {
 				// biome-ignore lint/suspicious/noConsole:: intentional console output
 				console.warn(
 					chalk.yellow(
-						"Tip: You can launch Claude Code with just `claude`",
+						"Tip: You can launch CoStrict with just `csc`",
 					),
 				);
 				prompt = undefined;
@@ -2748,7 +2748,7 @@ async function run(): Promise<CommanderCommand> {
 								filterMcpServersByPolicy(configs);
 							if (blocked.length > 0) {
 								process.stderr.write(
-									`Warning: claude.ai MCP ${plural(blocked.length, "server")} blocked by enterprise policy: ${blocked.join(", ")}\n`,
+									`Warning: costrict.ai MCP ${plural(blocked.length, "server")} blocked by enterprise policy: ${blocked.join(", ")}\n`,
 								);
 							}
 							return allowed;
@@ -5515,7 +5515,7 @@ async function run(): Promise<CommanderCommand> {
 			}
 		})
 		.version(
-			`${MACRO.VERSION} (Claude Code)`,
+			`${MACRO.VERSION} (CoStrict)`,
 			"-v, --version",
 			"Output the version number",
 		);
@@ -5752,7 +5752,7 @@ async function run(): Promise<CommanderCommand> {
 		.enablePositionalOptions();
 
 	mcp.command("serve")
-		.description(`Start the Claude Code MCP server`)
+		.description(`Start the CoStrict MCP server`)
 		.option("-d, --debug", "Enable debug mode", () => true)
 		.option(
 			"--verbose",
@@ -5861,7 +5861,7 @@ async function run(): Promise<CommanderCommand> {
 	if (feature("DIRECT_CONNECT")) {
 		program
 			.command("server")
-			.description("Start a Claude Code session server")
+			.description("Start a CoStrict session server")
 			.option("--port <number>", "HTTP port", "0")
 			.option("--host <string>", "Bind address", "0.0.0.0")
 			.option("--auth-token <token>", "Bearer token for auth")
@@ -5974,7 +5974,7 @@ async function run(): Promise<CommanderCommand> {
 		program
 			.command("ssh <host> [dir]")
 			.description(
-				"Run Claude Code on a remote host over SSH. Deploys the binary and " +
+				"Run CoStrict on a remote host over SSH. Deploys the binary and " +
 					"tunnels API auth back through your local machine — no remote setup needed.",
 			)
 			.option(
@@ -5995,9 +5995,9 @@ async function run(): Promise<CommanderCommand> {
 				// commander runs. Reaching here means host was missing or the
 				// rewrite predicate didn't match.
 				process.stderr.write(
-					"Usage: claude ssh <user@host | ssh-config-alias> [dir]\n\n" +
-						"Runs Claude Code on a remote Linux host. You don't need to install\n" +
-						"anything on the remote or run `claude auth login` there — the binary is\n" +
+					"Usage: csc ssh <user@host | ssh-config-alias> [dir]\n\n" +
+						"Runs CoStrict on a remote Linux host. You don't need to install\n" +
+						"anything on the remote or run `csc auth login` there — the binary is\n" +
 						"deployed over SSH and API auth tunnels back through your local machine.\n",
 				);
 				process.exit(1);
@@ -6011,7 +6011,7 @@ async function run(): Promise<CommanderCommand> {
 		program
 			.command("open <cc-url>")
 			.description(
-				"Connect to a Claude Code server (internal — use cc:// URLs)",
+				"Connect to a CoStrict server (internal — use cc:// URLs)",
 			)
 			.option("-p, --print [prompt]", "Print mode (headless)")
 			.option(
@@ -6138,7 +6138,7 @@ async function run(): Promise<CommanderCommand> {
 	const pluginCmd = program
 		.command("plugin")
 		.alias("plugins")
-		.description("Manage Claude Code plugins")
+		.description("Manage CoStrict plugins")
 		.configureHelp(createSortedHelpConfig());
 
 	pluginCmd
@@ -6176,7 +6176,7 @@ async function run(): Promise<CommanderCommand> {
 	// Marketplace subcommands
 	const marketplaceCmd = pluginCmd
 		.command("marketplace")
-		.description("Manage Claude Code marketplaces")
+		.description("Manage CoStrict marketplaces")
 		.configureHelp(createSortedHelpConfig());
 
 	marketplaceCmd
@@ -6448,7 +6448,7 @@ async function run(): Promise<CommanderCommand> {
 			.command("remote-control", { hidden: true })
 			.alias("rc")
 			.description(
-				"Connect your local environment for remote-control sessions via claude.ai/code",
+				"Connect your local environment for remote-control sessions via costrict.ai",
 			)
 			.action(async () => {
 				// Unreachable — cli.tsx fast-path handles this command before main.tsx loads.
@@ -6482,7 +6482,7 @@ async function run(): Promise<CommanderCommand> {
   program
     .command('doctor')
     .description(
-      'Check the health of your Claude Code auto-updater. Note: The workspace trust dialog is skipped and stdio servers from .mcp.json are spawned for health checks. Only use this command in directories you trust.',
+      'Check the health of your CoStrict auto-updater. Note: The workspace trust dialog is skipped and stdio servers from .mcp.json are spawned for health checks. Only use this command in directories you trust.',
     )
     .action(async () => {
       const [{ doctorHandler }, { createRoot }] = await Promise.all([
@@ -6543,7 +6543,7 @@ async function run(): Promise<CommanderCommand> {
 	program
 		.command("install [target]")
 		.description(
-			"Install Claude Code native build. Use [target] to specify version (stable, latest, or specific version)",
+			"Install CoStrict native build. Use [target] to specify version (stable, latest, or specific version)",
 		)
 		.option("--force", "Force installation even if already installed")
 		.action(

@@ -1,0 +1,491 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775699977418,
+  "projectRoot": "D:\\source_codespace\\geroge\\costrict-repo\\csc",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.2.4",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "build": "bun run build.ts",
+      "dev": "bun run scripts/dev.ts",
+      "dev:inspect": "bun run scripts/dev-debug.ts",
+      "prepublishOnly": "bun run build",
+      "lint": "biome lint src/",
+      "lint:fix": "biome lint --fix src/",
+      "format": "biome format --write src/",
+      "prepare": "git config core.hooksPath .githooks",
+      "test": "bun test",
+      "check:unused": "knip-bun",
+      "health": "bun run scripts/health-check.ts",
+      "postinstall": "node scripts/postinstall.cjs",
+      "docs:dev": "npx mintlify dev"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": true,
+    "workspaces": [
+      "packages/*",
+      "packages/@ant/*"
+    ],
+    "mainDirectories": [
+      "docs",
+      "scripts",
+      "src",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 493,
+      "lastAccessed": 1775699977351,
+      "keyFiles": [
+        "chunk-012wcg2m.js",
+        "chunk-03qk9m4j.js",
+        "chunk-05x3x594.js",
+        "chunk-06saje2v.js",
+        "chunk-0731m51q.js"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 11,
+      "lastAccessed": 1775699977352,
+      "keyFiles": [
+        "auto-updater.md",
+        "external-dependencies.md",
+        "favicon.svg",
+        "feature-exploration-plan.md",
+        "feature-flags-audit-complete.md"
+      ]
+    },
+    "learn": {
+      "path": "learn",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775699977373,
+      "keyFiles": [
+        "LEARN.md",
+        "phase-1-qa.md",
+        "phase-1-startup-flow.md",
+        "phase-2-conversation-loop.md",
+        "phase-2-qa.md"
+      ]
+    },
+    "packages": {
+      "path": "packages",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775699977374,
+      "keyFiles": []
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 7,
+      "lastAccessed": 1775699977375,
+      "keyFiles": [
+        "defines.ts",
+        "dev-debug.ts",
+        "dev.ts",
+        "download-ripgrep.ts",
+        "health-check.ts"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 17,
+      "lastAccessed": 1775699977376,
+      "keyFiles": [
+        "commands.ts",
+        "context.ts",
+        "cost-tracker.ts",
+        "costHook.ts",
+        "dialogLaunchers.tsx"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 0,
+      "lastAccessed": 1775699977377,
+      "keyFiles": []
+    },
+    "vendor": {
+      "path": "vendor",
+      "purpose": "Third-party code",
+      "fileCount": 0,
+      "lastAccessed": 1775699977377,
+      "keyFiles": []
+    },
+    "src\\components": {
+      "path": "src\\components",
+      "purpose": "UI components",
+      "fileCount": 116,
+      "lastAccessed": 1775699977383,
+      "keyFiles": [
+        "AgentProgressLine.tsx",
+        "AntModelSwitchCallout.tsx",
+        "App.tsx"
+      ]
+    },
+    "tests\\mocks": {
+      "path": "tests\\mocks",
+      "purpose": "Mock data",
+      "fileCount": 2,
+      "lastAccessed": 1775699977384,
+      "keyFiles": [
+        "api-responses.ts",
+        "file-system.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src\\main.tsx",
+      "accessCount": 29,
+      "lastAccessed": 1775725223582,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 18,
+      "lastAccessed": 1775725138610,
+      "type": "directory"
+    },
+    {
+      "path": "src\\constants\\github-app.ts",
+      "accessCount": 12,
+      "lastAccessed": 1775724770054,
+      "type": "file"
+    },
+    {
+      "path": "src\\bridge\\bridgeMain.ts",
+      "accessCount": 12,
+      "lastAccessed": 1775724821073,
+      "type": "file"
+    },
+    {
+      "path": "src\\constants\\prompts.ts",
+      "accessCount": 11,
+      "lastAccessed": 1775724782361,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\ultraplan.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1775724599065,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\CondensedLogo.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1775718295716,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\WelcomeV2.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1775718295787,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\Clawd.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1775718295895,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\thinkback\\thinkback.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1775722174864,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 6,
+      "lastAccessed": 1775724060323,
+      "type": "directory"
+    },
+    {
+      "path": "src\\bridge\\bridgeEnabled.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775724776670,
+      "type": "file"
+    },
+    {
+      "path": "src\\cli\\update.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775722843167,
+      "type": "file"
+    },
+    {
+      "path": "src\\bridge\\envLessBridgeConfig.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775722984152,
+      "type": "file"
+    },
+    {
+      "path": "src\\bridge\\trustedDevice.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775723110426,
+      "type": "file"
+    },
+    {
+      "path": "scripts\\defines.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775721967631,
+      "type": "file"
+    },
+    {
+      "path": "src\\cli\\handlers\\mcp.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1775722843764,
+      "type": "file"
+    },
+    {
+      "path": "src\\utils\\settings\\types.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775725238439,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\user_project_context.md",
+      "accessCount": 2,
+      "lastAccessed": 1775706764513,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\d0afd455-d4ab-400a-97f2-9401ba20e404\\tool-results\\toolu_01KGhj49wrMbbrucSw5xGuKK.txt",
+      "accessCount": 2,
+      "lastAccessed": 1775718497189,
+      "type": "file"
+    },
+    {
+      "path": "src\\constants\\system.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775718510480,
+      "type": "file"
+    },
+    {
+      "path": "src\\entrypoints\\cli.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775721525046,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/cli.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775721594284,
+      "type": "directory"
+    },
+    {
+      "path": "src/main.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775721594305,
+      "type": "directory"
+    },
+    {
+      "path": "src\\commands\\stats\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721898353,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\status\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721898912,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\passes\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721899512,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\model\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721900118,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\stickers\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721909771,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\statusline.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775721910409,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\plugin\\index.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775721911269,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\remote-setup\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721912148,
+      "type": "file"
+    },
+    {
+      "path": "src\\commands\\feedback\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775721923887,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1775721959048,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude",
+      "accessCount": 1,
+      "lastAccessed": 1775704289828,
+      "type": "directory"
+    },
+    {
+      "path": "src\\utils\\thinking.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775705731914,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\settings.json",
+      "accessCount": 1,
+      "lastAccessed": 1775705732059,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory",
+      "accessCount": 1,
+      "lastAccessed": 1775705777495,
+      "type": "directory"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\project_thinking_config.md",
+      "accessCount": 1,
+      "lastAccessed": 1775705805851,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\LogoV2.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775706655366,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\AnimatedAsterisk.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775706663883,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\LogoV2\\AnimatedClawd.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775706664113,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\design-system\\ThemeProvider.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775707361784,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\design-system\\color.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775707361857,
+      "type": "file"
+    },
+    {
+      "path": "src\\utils\\theme.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775707362058,
+      "type": "file"
+    },
+    {
+      "path": "packages\\@ant\\ink\\src\\theme",
+      "accessCount": 1,
+      "lastAccessed": 1775707362175,
+      "type": "directory"
+    },
+    {
+      "path": "packages\\@ant\\ink\\src\\theme\\theme-types.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775707365280,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\d0afd455-d4ab-400a-97f2-9401ba20e404\\tool-results\\toolu_01MNsrxYTX1NKRHX9Bj8oT5G.txt",
+      "accessCount": 1,
+      "lastAccessed": 1775718305848,
+      "type": "file"
+    },
+    {
+      "path": "src\\cli\\handlers\\autoMode.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775718505743,
+      "type": "file"
+    },
+    {
+      "path": "src\\bootstrap\\state.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775718515344,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

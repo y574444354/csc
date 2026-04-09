@@ -1,12 +1,12 @@
 /**
  * CoStrict 凭证管理模块
- * 负责读写 ~/.costrict/share/auth.json，与 CoStrict IDE 插件共享凭证
+ * 负责读写 ~/.claude/csc-auth.json
  */
 
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
 import { createHash } from 'node:crypto'
+import { getClaudeConfigHomeDir } from '../../utils/envUtils.js'
 
 /**
  * CoStrict 凭证格式 (与 IDE 插件兼容)
@@ -25,11 +25,10 @@ export interface CoStrictCredentials {
 }
 
 /**
- * 获取 CoStrict 凭证文件路径
- * @returns ~/.costrict/share/auth.json
+ * 获取 ~/.claude/csc-auth.json 路径
  */
 export function getCoStrictCredentialsPath(): string {
-  return join(homedir(), '.costrict', 'share', 'auth.json')
+  return join(getClaudeConfigHomeDir(), 'csc-auth.json')
 }
 
 /**
@@ -51,14 +50,9 @@ export function generateMachineId(): string {
  */
 export async function loadCoStrictCredentials(): Promise<CoStrictCredentials | null> {
   try {
-    const filepath = getCoStrictCredentialsPath()
-    const content = await fs.readFile(filepath, 'utf-8')
+    const content = await fs.readFile(getCoStrictCredentialsPath(), 'utf-8')
     const credentials = JSON.parse(content) as CoStrictCredentials
-
-    if (!credentials.access_token || !credentials.base_url) {
-      return null
-    }
-
+    if (!credentials.access_token || !credentials.base_url) return null
     return credentials
   } catch (error: any) {
     if (error.code === 'ENOENT') return null
@@ -68,16 +62,17 @@ export async function loadCoStrictCredentials(): Promise<CoStrictCredentials | n
 }
 
 /**
- * 保存 CoStrict 凭证
+ * 保存 CoStrict 凭证到 ~/.claude/csc-auth.json
  */
 export async function saveCoStrictCredentials(
   credentials: CoStrictCredentials,
 ): Promise<void> {
   const filepath = getCoStrictCredentialsPath()
-  const dir = join(homedir(), '.costrict', 'share')
-  await fs.mkdir(dir, { recursive: true, mode: 0o755 })
-  const content = JSON.stringify(credentials, null, 2)
-  await fs.writeFile(filepath, content, { encoding: 'utf-8', mode: 0o600 })
+  await fs.mkdir(getClaudeConfigHomeDir(), { recursive: true })
+  await fs.writeFile(filepath, JSON.stringify(credentials, null, 2) + '\n', {
+    encoding: 'utf-8',
+    mode: 0o600,
+  })
 }
 
 /**
@@ -98,6 +93,20 @@ export async function hasCoStrictCredentials(): Promise<boolean> {
   try {
     await fs.access(getCoStrictCredentialsPath())
     return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 同步检查 CoStrict 凭证是否存在
+ * 供同步上下文（如 modelOptions）使用
+ */
+export function hasCoStrictCredentialsSync(): boolean {
+  try {
+    // 使用 require 的同步文件系统检查
+    const { existsSync } = require('node:fs')
+    return existsSync(getCoStrictCredentialsPath())
   } catch {
     return false
   }

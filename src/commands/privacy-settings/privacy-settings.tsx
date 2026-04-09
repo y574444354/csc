@@ -16,7 +16,7 @@ import {
 import type { LocalJSXCommandOnDone } from '../../types/command.js'
 
 const FALLBACK_MESSAGE =
-  'Review and manage your privacy settings at https://claude.ai/settings/data-privacy-controls'
+  'Review and manage your privacy settings at https://costrict.ai/settings/data-privacy-controls'
 
 export async function call(
   onDone: LocalJSXCommandOnDone,

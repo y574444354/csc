@@ -230,9 +230,9 @@ function PermissionRulesTab({
       <Text>
         {
           {
-            allow: "Claude Code won't ask before using allowed tools.",
-            ask: 'Claude Code will always ask for confirmation before using these tools.',
-            deny: 'Claude Code will always reject requests to use denied tools.',
+            allow: "CoStrict won't ask before using allowed tools.",
+            ask: 'CoStrict will always ask for confirmation before using these tools.',
+            deny: 'CoStrict will always reject requests to use denied tools.',
           }[tab]
         }
       </Text>
@@ -753,7 +753,7 @@ export function PermissionRuleList({
           <Tab id="workspace" title="Workspace">
             <Box flexDirection="column">
               <Text>
-                Claude Code can read files in the workspace, and make edits when
+                CoStrict can read files in the workspace, and make edits when
                 auto-accept edits is on.
               </Text>
               <WorkspaceTab

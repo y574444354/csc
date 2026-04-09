@@ -199,11 +199,11 @@ export function TrustDialog({ onDone, commands }: Props): React.ReactNode {
           first.
         </Text>
         <Text>
-          Claude Code{"'"}ll be able to read, edit, and execute files here.
+          CoStrict{"'"}ll be able to read, edit, and execute files here.
         </Text>
 
         <Text dimColor>
-          <Link url="https://code.claude.com/docs/en/security">
+          <Link url="https://costrict.ai/docs/en/security">
             Security guide
           </Link>
         </Text>

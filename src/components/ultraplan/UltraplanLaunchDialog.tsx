@@ -43,10 +43,10 @@ function generatePromptIdentifier(): string {
 function getUltraplanLaunchConfig(_identifier: string) {
   return {
     dialogBody:
-      'Ultraplan sends your task to Claude Code on the web for deep exploration. ' +
+      'Ultraplan sends your task to CoStrict on the web for deep exploration. ' +
       'Claude will research, draft a detailed plan, and return it here for your review ' +
       'before any code is changed.',
-    dialogPipeline: 'Your prompt → Claude Code on the web → Plan review → Implementation',
+    dialogPipeline: 'Your prompt → CoStrict on the web → Plan review → Implementation',
     timeEstimate: '~10–30 min',
   };
 }
@@ -107,8 +107,8 @@ export function UltraplanLaunchDialog({ onChoice }: UltraplanLaunchDialogProps):
   // ------------------------------------------------------------------
 
   const runDescription = isBridgeEnabled
-    ? 'Disable remote control and launch in Claude Code on the web'
-    : 'launch in Claude Code on the web';
+    ? 'Disable remote control and launch in CoStrict on the web'
+    : 'launch in CoStrict on the web';
 
   const options = React.useMemo(
     () => [
@@ -135,7 +135,7 @@ export function UltraplanLaunchDialog({ onChoice }: UltraplanLaunchDialogProps):
           {isBridgeEnabled && <Text dimColor>This will disable Remote Control for this session.</Text>}
           {showTermsLink && (
             <Text dimColor>
-              For more information on Claude Code on the web: <Link url={CCR_TERMS_URL}>{CCR_TERMS_URL}</Link>
+              For more information on CoStrict on the web: <Link url={CCR_TERMS_URL}>{CCR_TERMS_URL}</Link>
             </Text>
           )}
         </Box>

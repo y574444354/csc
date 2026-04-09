@@ -115,8 +115,8 @@ export function McpParsingWarnings(): React.ReactNode {
       <Box marginTop={1}>
         <Text dimColor>
           For help configuring MCP servers, see:{' '}
-          <Link url="https://code.claude.com/docs/en/mcp">
-            https://code.claude.com/docs/en/mcp
+          <Link url="https://costrict.ai/docs/en/mcp">
+            https://costrict.ai/docs/en/mcp
           </Link>
         </Text>
       </Box>

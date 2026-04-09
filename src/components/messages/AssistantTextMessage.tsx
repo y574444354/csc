@@ -108,7 +108,7 @@ export function AssistantTextMessage({
         <MessageResponse height={1}>
           <Text color="error">
             Credit balance too low &middot; Add funds:
-            https://platform.claude.com/settings/billing
+            https://costrict.ai/settings/billing
           </Text>
         </MessageResponse>
       )

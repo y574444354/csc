@@ -33,6 +33,7 @@ import {
 } from './model.js'
 import { has1mContext } from '../context.js'
 import { getGlobalConfig } from '../config.js'
+import { hasCoStrictCredentialsSync } from '../../costrict/provider/credentials.js'
 
 // @[MODEL LAUNCH]: Update all the available and default model option strings below.
 
@@ -82,8 +83,8 @@ function getCustomSonnetOption(): ModelOption | undefined {
     provider === 'openai'
       ? process.env.OPENAI_DEFAULT_SONNET_MODEL
       : provider === 'gemini'
-      ? process.env.GEMINI_DEFAULT_SONNET_MODEL
-      : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+        ? process.env.GEMINI_DEFAULT_SONNET_MODEL
+        : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
   // When a 3P user has a custom sonnet model string, show it directly
   if (is3P && customSonnetModel) {
     const is1m = has1mContext(customSonnetModel)
@@ -92,14 +93,14 @@ function getCustomSonnetOption(): ModelOption | undefined {
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_SONNET_MODEL_NAME
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_SONNET_MODEL_NAME
-        : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME
+          ? process.env.GEMINI_DEFAULT_SONNET_MODEL_NAME
+          : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME
     const descEnv =
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_SONNET_MODEL_DESCRIPTION
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_SONNET_MODEL_DESCRIPTION
-        : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION
+          ? process.env.GEMINI_DEFAULT_SONNET_MODEL_DESCRIPTION
+          : process.env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION
     return {
       value: 'sonnet',
       label: nameEnv ?? customSonnetModel,
@@ -131,8 +132,8 @@ function getCustomOpusOption(): ModelOption | undefined {
     provider === 'openai'
       ? process.env.OPENAI_DEFAULT_OPUS_MODEL
       : provider === 'gemini'
-      ? process.env.GEMINI_DEFAULT_OPUS_MODEL
-      : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
+        ? process.env.GEMINI_DEFAULT_OPUS_MODEL
+        : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
   // When a 3P user has a custom opus model string, show it directly
   if (is3P && customOpusModel) {
     const is1m = has1mContext(customOpusModel)
@@ -141,14 +142,14 @@ function getCustomOpusOption(): ModelOption | undefined {
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_OPUS_MODEL_NAME
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_OPUS_MODEL_NAME
-        : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME
+          ? process.env.GEMINI_DEFAULT_OPUS_MODEL_NAME
+          : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME
     const descEnv =
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_OPUS_MODEL_DESCRIPTION
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_OPUS_MODEL_DESCRIPTION
-        : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION
+          ? process.env.GEMINI_DEFAULT_OPUS_MODEL_DESCRIPTION
+          : process.env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION
     return {
       value: 'opus',
       label: nameEnv ?? customOpusModel,
@@ -207,8 +208,8 @@ function getCustomHaikuOption(): ModelOption | undefined {
     provider === 'openai'
       ? process.env.OPENAI_DEFAULT_HAIKU_MODEL
       : provider === 'gemini'
-      ? process.env.GEMINI_DEFAULT_HAIKU_MODEL
-      : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
+        ? process.env.GEMINI_DEFAULT_HAIKU_MODEL
+        : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
   // When a 3P user has a custom haiku model string, show it directly
   if (is3P && customHaikuModel) {
     // Use appropriate NAME/DESCRIPTION env vars based on provider
@@ -216,14 +217,14 @@ function getCustomHaikuOption(): ModelOption | undefined {
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_HAIKU_MODEL_NAME
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_HAIKU_MODEL_NAME
-        : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME
+          ? process.env.GEMINI_DEFAULT_HAIKU_MODEL_NAME
+          : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME
     const descEnv =
       provider === 'openai'
         ? process.env.OPENAI_DEFAULT_HAIKU_MODEL_DESCRIPTION
         : provider === 'gemini'
-        ? process.env.GEMINI_DEFAULT_HAIKU_MODEL_DESCRIPTION
-        : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION
+          ? process.env.GEMINI_DEFAULT_HAIKU_MODEL_DESCRIPTION
+          : process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION
     return {
       value: 'haiku',
       label: nameEnv ?? customHaikuModel,
@@ -382,7 +383,8 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
   if (getAPIProvider() === 'costrict') {
     // 延迟 require 避免循环依赖，且该模块只在 costrict provider 下加载
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCachedCoStrictModels } = require('../../costrict/provider/models.js') as typeof import('../../costrict/provider/models.js')
+    const { getCachedCoStrictModels } =
+      require('../../costrict/provider/models.js') as typeof import('../../costrict/provider/models.js')
     const cachedModels = getCachedCoStrictModels()
     if (cachedModels.length > 0) {
       const sorted = [...cachedModels].sort((a, b) => a.id.localeCompare(b.id))
@@ -410,7 +412,14 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
 
   // PAYG 1P API: Default (Sonnet) + Sonnet 1M + Opus 4.6 + Opus 1M + Haiku
   if (getAPIProvider() === 'firstParty') {
-    const payg1POptions = [getDefaultOptionForUser(fastMode)]
+    // 当用户未登录 CoStrict 时，只显示推荐登录选项
+    if (!hasCoStrictCredentialsSync()) {
+      return [getCoStrictLoginOption()]
+    }
+
+    const payg1POptions: ModelOption[] = []
+    payg1POptions.push(getDefaultOptionForUser(fastMode))
+
     if (checkSonnet1mAccess()) {
       payg1POptions.push(getSonnet46_1MOption())
     }
@@ -423,11 +432,19 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
       }
     }
     payg1POptions.push(getHaiku45Option())
+
     return payg1POptions
   }
 
   // PAYG 3P: Default (Sonnet 4.5) + Sonnet (3P custom) or Sonnet 4.6/1M + Opus (3P custom) or Opus 4.1/Opus 4.6/Opus1M + Haiku + Opus 4.1
-  const payg3pOptions = [getDefaultOptionForUser(fastMode)]
+
+  // 当用户未登录 CoStrict 时，只显示推荐登录选项
+  if (getAPIProvider() !== 'costrict' && !hasCoStrictCredentialsSync()) {
+    return [getCoStrictLoginOption()]
+  }
+
+  const payg3pOptions: ModelOption[] = []
+  payg3pOptions.push(getDefaultOptionForUser(fastMode))
 
   const customSonnet = getCustomSonnetOption()
   if (customSonnet !== undefined) {
@@ -457,7 +474,21 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
   } else {
     payg3pOptions.push(getHaikuOption())
   }
+
   return payg3pOptions
+}
+
+/**
+ * CoStrict 登录推荐选项
+ * 当用户未登录 CoStrict 时显示，提示用户可以登录以使用 CoStrict 模型
+ */
+function getCoStrictLoginOption(): ModelOption {
+  return {
+    value: 'costrict-login',
+    label: 'CoStrict (Recommended)',
+    description:
+      'Sign in to CoStrict for more models and better pricing · Run /login and select CoStrict',
+  }
 }
 
 // @[MODEL LAUNCH]: Add the new model ID to the appropriate family pattern below
@@ -578,6 +609,11 @@ export function getModelOptions(fastMode = false): ModelOption[] {
   } else if (initialMainLoopModel !== null) {
     customModel = initialMainLoopModel
   }
+  // 忽略 costrict-login 伪模型值（用户点击了推荐登录选项但未完成登录）
+  if (customModel === 'costrict-login') {
+    return filterModelOptionsByAllowlist(options)
+  }
+
   if (customModel === null || options.some(opt => opt.value === customModel)) {
     return filterModelOptionsByAllowlist(options)
   } else if (customModel === 'opusplan') {

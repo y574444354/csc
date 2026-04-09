@@ -29,7 +29,7 @@ export function useChromeExtensionNotification(): void {
         key: 'chrome-requires-subscription',
         jsx: (
           <Text color="error">
-            Claude in Chrome requires a claude.ai subscription
+            Claude in Chrome requires a costrict.ai subscription
           </Text>
         ),
         priority: 'immediate',
@@ -44,7 +44,7 @@ export function useChromeExtensionNotification(): void {
         key: 'chrome-extension-not-detected',
         jsx: (
           <Text color="warning">
-            Chrome extension not detected · https://claude.ai/chrome to install
+            Chrome extension not detected · https://costrict.ai/chrome to install
           </Text>
         ),
         // TODO(hackyon): Lower the priority if the claude-in-chrome integration is no longer opt-in

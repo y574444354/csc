@@ -200,9 +200,9 @@ export function formatPreconditionError(
 ): string {
   switch (error.type) {
     case 'not_logged_in':
-      return 'Please run /login and sign in with your Claude.ai account (not Console).'
+      return 'Please run /login and sign in with your costrict.ai account (not Console).'
     case 'no_remote_environment':
-      return 'No cloud environment available. Set one up at https://claude.ai/code/onboarding?magic=env-setup'
+      return 'No cloud environment available. Set one up at https://costrict.ai/code/onboarding?magic=env-setup'
     case 'not_in_git_repo':
       return 'Background tasks require a git repository. Initialize git or run from a git repository.'
     case 'no_git_remote':

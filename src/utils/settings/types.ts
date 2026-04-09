@@ -888,7 +888,7 @@ export const SettingsSchema = lazySchema(() =>
               .string()
               .optional()
               .describe(
-                'Display name for the assistant, shown in the claude.ai session list',
+                'Display name for the assistant, shown in the costrict.ai session list',
               ),
           }
         : {}),

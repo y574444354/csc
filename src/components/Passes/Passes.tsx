@@ -213,13 +213,13 @@ export function Passes({ onDone }: Props): React.ReactNode {
         <Box flexDirection="column" marginLeft={2}>
           <Text dimColor>
             {referrerReward
-              ? `Share a free week of Claude Code with friends. If they love it and subscribe, you'll get ${formatCreditAmount(referrerReward)} of extra usage to keep building. `
-              : 'Share a free week of Claude Code with friends. '}
+              ? `Share a free week of CoStrict with friends. If they love it and subscribe, you'll get ${formatCreditAmount(referrerReward)} of extra usage to keep building. `
+              : 'Share a free week of CoStrict with friends. '}
             <Link
               url={
                 referrerReward
-                  ? 'https://support.claude.com/en/articles/13456702-claude-code-guest-passes'
-                  : 'https://support.claude.com/en/articles/12875061-claude-code-guest-passes'
+                  ? 'https://costrict.ai/support/guest-passes'
+                  : 'https://costrict.ai/support/guest-passes'
               }
             >
               Terms apply.

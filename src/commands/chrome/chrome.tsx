@@ -17,7 +17,7 @@ import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js'
 import { env } from '../../utils/env.js'
 import { isRunningOnHomespace } from '../../utils/envUtils.js'
 
-const CHROME_EXTENSION_URL = 'https://claude.ai/chrome'
+const CHROME_EXTENSION_URL = 'https://costrict.ai/chrome'
 const CHROME_PERMISSIONS_URL = 'https://clau.de/chrome/permissions'
 const CHROME_RECONNECT_URL = 'https://clau.de/chrome/reconnect'
 
@@ -147,7 +147,7 @@ function ClaudeInChromeMenu({
       <Box flexDirection="column" gap={1}>
         <Text>
           Claude in Chrome works with the Chrome extension to let you control
-          your browser directly from Claude Code. Navigate websites, fill forms,
+          your browser directly from CoStrict. Navigate websites, fill forms,
           capture screenshots, record GIFs, and debug with console logs and
           network requests.
         </Text>
@@ -161,7 +161,7 @@ function ClaudeInChromeMenu({
 
         {"external" !== 'ant' && !isClaudeAISubscriber && (
           <Text color="error">
-            Claude in Chrome requires a claude.ai subscription.
+            Claude in Chrome requires a costrict.ai subscription.
           </Text>
         )}
 
@@ -214,7 +214,7 @@ function ClaudeInChromeMenu({
             </Text>
           </>
         )}
-        <Text dimColor>Learn more: https://code.claude.com/docs/en/chrome</Text>
+        <Text dimColor>Learn more: https://costrict.ai/docs/en/chrome</Text>
       </Box>
     </Dialog>
   )

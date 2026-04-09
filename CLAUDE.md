@@ -51,12 +51,13 @@ bun run docs:dev
 ### Runtime & Build
 
 - **Runtime**: Bun (not Node.js). All imports, builds, and execution use Bun APIs.
-- **Build**: `build.ts` 执行 `Bun.build()` with `splitting: true`，入口 `src/entrypoints/cli.tsx`，输出 `dist/cli.js` + chunk files。默认启用 `AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE` feature。构建后自动替换 `import.meta.require` 为 Node.js 兼容版本（产物 bun/node 都可运行）。
-- **Dev mode**: `scripts/dev.ts` 通过 Bun `-d` flag 注入 `MACRO.*` defines，运行 `src/entrypoints/cli.tsx`。默认启用 `BUDDY`、`TRANSCRIPT_CLASSIFIER`、`BRIDGE_MODE`、`AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE` 六个 feature。
+- **Build**: `build.ts` 执行 `Bun.build()` with `splitting: true`，入口 `src/entrypoints/cli.tsx`，输出 `dist/cli.js` + chunk files。构建后自动替换 `import.meta.require` 为 Node.js 兼容版本（产物 bun/node 都可运行）。
+- **Dev mode**: `scripts/dev.ts` 通过 Bun `-d` flag 注入 `MACRO.*` defines，运行 `src/entrypoints/cli.tsx`。Dev 比 Build 多启用 `BUDDY`、`TRANSCRIPT_CLASSIFIER`、`BRIDGE_MODE` 三个 feature。
 - **Module system**: ESM (`"type": "module"`), TSX with `react-jsx` transform.
 - **Monorepo**: Bun workspaces — internal packages live in `packages/` resolved via `workspace:*`.
-- **Lint/Format**: Biome (`biome.json`)。`bun run lint` / `bun run lint:fix` / `bun run format`。
-- **Defines**: 集中管理在 `scripts/defines.ts`。当前版本 `2.1.888`。
+- **Lint/Format**: Biome (`biome.json`)。`bun run lint` / `bun run lint:fix` / `bun run format`。引号风格 `single`，尾逗号 `all`，箭头函数括号 `asNeeded`。
+- **Defines**: 集中管理在 `scripts/defines.ts`。当前版本 `4.0.1`。
+- **Binary name**: 构建后的 CLI 注册为 `csc` 和 `claude-code-best` 两个 bin 命令。
 
 ### Entry & Bootstrap
 
@@ -132,8 +133,8 @@ Feature flags control which functionality is enabled at runtime:
 
 - **在代码中使用**: 统一通过 `import { feature } from 'bun:bundle'` 导入，调用 `feature('FLAG_NAME')` 返回 `boolean`。**不要**在 `cli.tsx` 或其他文件里自己定义 `feature` 函数或覆盖这个 import。
 - **启用方式**: 通过环境变量 `FEATURE_<FLAG_NAME>=1`。例如 `FEATURE_BUDDY=1 bun run dev` 启用 BUDDY 功能。
-- **Dev 默认 features**: `BUDDY`、`TRANSCRIPT_CLASSIFIER`、`BRIDGE_MODE`、`AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE`（见 `scripts/dev.ts`）。
-- **Build 默认 features**: `AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE`（见 `build.ts`）。
+- **Dev 默认 features**: `BUDDY`、`TRANSCRIPT_CLASSIFIER`、`BRIDGE_MODE`、`AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE`、`SHOT_STATS`、`PROMPT_CACHE_BREAK_DETECTION`、`TOKEN_BUDGET`、`AGENT_TRIGGERS`、`ULTRATHINK`、`BUILTIN_EXPLORE_PLAN_AGENTS`、`LODESTONE`、`EXTRACT_MEMORIES`、`VERIFICATION_AGENT`、`KAIROS_BRIEF`、`AWAY_SUMMARY`、`ULTRAPLAN`、`DAEMON`（见 `scripts/dev.ts`）。
+- **Build 默认 features**: `AGENT_TRIGGERS_REMOTE`、`CHICAGO_MCP`、`VOICE_MODE`、`SHOT_STATS`、`PROMPT_CACHE_BREAK_DETECTION`、`TOKEN_BUDGET`、`AGENT_TRIGGERS`、`ULTRATHINK`、`BUILTIN_EXPLORE_PLAN_AGENTS`、`LODESTONE`、`EXTRACT_MEMORIES`、`VERIFICATION_AGENT`、`KAIROS_BRIEF`、`AWAY_SUMMARY`、`ULTRAPLAN`、`DAEMON`（见 `build.ts`）。
 - **常见 flag**: `BUDDY`, `DAEMON`, `BRIDGE_MODE`, `BG_SESSIONS`, `PROACTIVE`, `KAIROS`, `VOICE_MODE`, `FORK_SUBAGENT`, `SSH_REMOTE`, `DIRECT_CONNECT`, `TEMPLATES`, `CHICAGO_MCP`, `BYOC_ENVIRONMENT_RUNNER`, `SELF_HOSTED_RUNNER`, `COORDINATOR_MODE`, `UDS_INBOX`, `LODESTONE`, `ABLATION_BASELINE` 等。
 - **类型声明**: `src/types/internal-modules.d.ts` 中声明了 `bun:bundle` 模块的 `feature` 函数签名。
 
@@ -239,4 +240,5 @@ export GEMINI_DEFAULT_OPUS_MODEL="gemini-2.5-pro"
 - **`src/` path alias** — tsconfig maps `src/*` to `./src/*`. Imports like `import { ... } from 'src/utils/...'` are valid.
 - **MACRO defines** — 集中管理在 `scripts/defines.ts`。Dev mode 通过 `bun -d` 注入，build 通过 `Bun.build({ define })` 注入。修改版本号等常量只改这个文件。
 - **构建产物兼容 Node.js** — `build.ts` 会自动后处理 `import.meta.require`，产物可直接用 `node dist/cli.js` 运行。
-- **Biome 配置** — 大量 lint 规则被关闭（decompiled 代码不适合严格 lint）。`.tsx` 文件用 120 行宽 + 强制分号；其他文件 80 行宽 + 按需分号。
+- **Biome 配置** — 大量 lint 规则被关闭（decompiled 代码不适合严格 lint）。`.tsx` 文件用 120 行宽 + 强制分号；其他文件 80 行宽 + 按需分号。JSON formatter 已禁用。`scripts/`、`packages/`、`.js`/`.mjs`/`.jsx` 文件不格式化。
+- **Provider 配置** — 首次运行后在 REPL 中输入 `/login`，选择 Anthropic Compatible / OpenAI / Gemini 配置 API 端点和模型。支持所有 Anthropic Messages API 兼容服务。

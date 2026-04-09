@@ -199,8 +199,8 @@ function SandboxModeTab({
         </Text>
         <Text dimColor>
           Learn more:{' '}
-          <Link url="https://code.claude.com/docs/en/sandboxing">
-            code.claude.com/docs/en/sandboxing
+          <Link url="https://costrict.ai/docs/en/sandboxing">
+            costrict.ai/docs/en/sandboxing
           </Link>
         </Text>
       </Box>

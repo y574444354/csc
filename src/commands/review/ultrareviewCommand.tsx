@@ -48,7 +48,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
 
   if (gate.kind === 'not-enabled') {
     onDone(
-      'Free ultrareviews used. Enable Extra Usage at https://claude.ai/settings/billing to continue.',
+      'Free ultrareviews used. Enable Extra Usage at https://costrict.ai/settings/billing to continue.',
       { display: 'system' },
     )
     return null
@@ -56,7 +56,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
 
   if (gate.kind === 'low-balance') {
     onDone(
-      `Balance too low to launch ultrareview ($${gate.available.toFixed(2)} available, $10 minimum). Top up at https://claude.ai/settings/billing`,
+      `Balance too low to launch ultrareview ($${gate.available.toFixed(2)} available, $10 minimum). Top up at https://costrict.ai/settings/billing`,
       { display: 'system' },
     )
     return null

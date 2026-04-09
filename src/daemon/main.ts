@@ -64,7 +64,7 @@ export async function daemonMain(args: string[]): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-Claude Code Daemon — persistent background supervisor
+CoStrict Daemon — persistent background supervisor
 
 USAGE
   claude daemon [subcommand] [options]

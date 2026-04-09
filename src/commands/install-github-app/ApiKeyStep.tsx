@@ -108,7 +108,7 @@ export function ApiKeyStep({
               {selectedOption === 'existing'
                 ? color('success', theme)('> ')
                 : '  '}
-              Use your existing Claude Code API key
+              Use your existing CoStrict API key
             </Text>
           </Box>
         )}
@@ -135,7 +135,7 @@ export function ApiKeyStep({
             onSubmit={onSubmit}
             onPaste={onApiKeyChange}
             focus={true}
-            placeholder="sk-ant… (Create a new key at https://platform.claude.com/settings/keys)"
+            placeholder="sk-ant… (Create a new key at https://costrict.ai/settings/keys)"
             mask="*"
             columns={terminalSize.columns}
             cursorOffset={cursorOffset}

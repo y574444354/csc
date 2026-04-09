@@ -330,8 +330,8 @@ export function MCPListPanel({
               </Text>
             )}
             <Text dimColor>
-              <Link url="https://code.claude.com/docs/en/mcp">
-                https://code.claude.com/docs/en/mcp
+              <Link url="https://costrict.ai/docs/en/mcp">
+                https://costrict.ai/docs/en/mcp
               </Link>{' '}
               for help
             </Text>

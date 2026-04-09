@@ -186,8 +186,8 @@ export function FastModePicker({
       )}
       <Text dimColor>
         Learn more:{' '}
-        <Link url="https://code.claude.com/docs/en/fast-mode">
-          https://code.claude.com/docs/en/fast-mode
+        <Link url="https://costrict.ai/docs/en/fast-mode">
+          https://costrict.ai/docs/en/fast-mode
         </Link>
       </Text>
     </Dialog>

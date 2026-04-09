@@ -165,7 +165,7 @@ const bothAuthMethodsNotice: StatusNoticeDefinition = {
           <Text color="warning">
             · Trying to use{' '}
             {authTokenInfo.source === 'claude.ai'
-              ? 'claude.ai'
+              ? 'costrict.ai'
               : authTokenInfo.source}
             ?{' '}
             {apiKeySource === 'ANTHROPIC_API_KEY'
@@ -177,7 +177,7 @@ const bothAuthMethodsNotice: StatusNoticeDefinition = {
           <Text color="warning">
             · Trying to use {apiKeySource}?{' '}
             {authTokenInfo.source === 'claude.ai'
-              ? 'claude /logout to sign out of claude.ai.'
+              ? 'claude /logout to sign out of costrict.ai.'
               : `Unset the ${authTokenInfo.source} environment variable.`}
           </Text>
         </Box>
@@ -239,7 +239,7 @@ const jetbrainsPluginNotice: StatusNoticeDefinition = {
         <Text>
           Install the <Text color="ide">{ideName}</Text> plugin from the
           JetBrains Marketplace:{' '}
-          <Text bold>https://docs.claude.com/s/claude-code-jetbrains</Text>
+          <Text bold>https://costrict.ai/docs/jetbrains</Text>
         </Text>
       </Box>
     )
