@@ -4,6 +4,12 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/gr
 import { isEnvTruthy } from '../../utils/envUtils.js'
 import { PLAN_APPLY_AGENT } from '../../costrict/agents/planApply.js'
 import { STRICT_PLAN_AGENT } from '../../costrict/agents/strictPlan.js'
+import { STRICT_SPEC_AGENT } from '../../costrict/agents/strictSpec.js'
+import { SPEC_PLAN_AGENT } from '../../costrict/agents/specPlan.js'
+import { PLAN_MANAGER_AGENT } from '../../costrict/agents/planManager.js'
+import { REQUIREMENT_AGENT } from '../../costrict/agents/requirement.js'
+import { DESIGN_AGENT } from '../../costrict/agents/designAgent.js'
+import { TASK_PLAN_AGENT } from '../../costrict/agents/taskPlan.js'
 import { SUB_CODING_AGENT } from '../../costrict/agents/subCoding.js'
 import { TASK_CHECK_AGENT } from '../../costrict/agents/taskCheck.js'
 import { QUICK_EXPLORE_AGENT } from '../../costrict/agents/quickExplore.js'
@@ -60,7 +66,13 @@ export function getBuiltInAgents(): AgentDefinition[] {
     STATUSLINE_SETUP_AGENT,
     PLAN_AGENT,
     STRICT_PLAN_AGENT,
+    STRICT_SPEC_AGENT,
     PLAN_APPLY_AGENT,
+    SPEC_PLAN_AGENT,
+    PLAN_MANAGER_AGENT,
+    REQUIREMENT_AGENT,
+    DESIGN_AGENT,
+    TASK_PLAN_AGENT,
     SUB_CODING_AGENT,
     TASK_CHECK_AGENT,
     QUICK_EXPLORE_AGENT,
