@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775699977418,
+  "lastScanned": 1775807788345,
   "projectRoot": "D:\\source_codespace\\geroge\\costrict-repo\\csc",
   "techStack": {
     "languages": [
@@ -37,6 +37,7 @@
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
     "scripts": {
+      "prebuild": "bun run scripts/generate-skills.ts",
       "build": "bun run build.ts",
       "dev": "bun run scripts/dev.ts",
       "dev:inspect": "bun run scripts/dev-debug.ts",
@@ -49,7 +50,9 @@
       "check:unused": "knip-bun",
       "health": "bun run scripts/health-check.ts",
       "postinstall": "node scripts/postinstall.cjs",
-      "docs:dev": "npx mintlify dev"
+      "docs:dev": "npx mintlify dev",
+      "generate:skills": "bun run scripts/generate-skills.ts",
+      "rcs": "bun run scripts/rcs.ts"
     }
   },
   "conventions": {
@@ -80,34 +83,34 @@
     "dist": {
       "path": "dist",
       "purpose": "Distribution/build output",
-      "fileCount": 493,
-      "lastAccessed": 1775699977351,
+      "fileCount": 508,
+      "lastAccessed": 1775807788272,
       "keyFiles": [
-        "chunk-012wcg2m.js",
-        "chunk-03qk9m4j.js",
-        "chunk-05x3x594.js",
-        "chunk-06saje2v.js",
-        "chunk-0731m51q.js"
+        "chunk-00tygws7.js",
+        "chunk-024he008.js",
+        "chunk-02z6r34h.js",
+        "chunk-03vt9zjn.js",
+        "chunk-05rsaxmy.js"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 11,
-      "lastAccessed": 1775699977352,
+      "fileCount": 13,
+      "lastAccessed": 1775807788301,
       "keyFiles": [
         "auto-updater.md",
+        "config-list.md",
         "external-dependencies.md",
         "favicon.svg",
-        "feature-exploration-plan.md",
-        "feature-flags-audit-complete.md"
+        "feature-exploration-plan.md"
       ]
     },
     "learn": {
       "path": "learn",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1775699977373,
+      "lastAccessed": 1775807788302,
       "keyFiles": [
         "LEARN.md",
         "phase-1-qa.md",
@@ -120,27 +123,27 @@
       "path": "packages",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1775699977374,
+      "lastAccessed": 1775807788302,
       "keyFiles": []
     },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 7,
-      "lastAccessed": 1775699977375,
+      "fileCount": 9,
+      "lastAccessed": 1775807788303,
       "keyFiles": [
         "defines.ts",
         "dev-debug.ts",
         "dev.ts",
         "download-ripgrep.ts",
-        "health-check.ts"
+        "generate-skills.ts"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 17,
-      "lastAccessed": 1775699977376,
+      "lastAccessed": 1775807788303,
       "keyFiles": [
         "commands.ts",
         "context.ts",
@@ -153,21 +156,21 @@
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 0,
-      "lastAccessed": 1775699977377,
+      "lastAccessed": 1775807788304,
       "keyFiles": []
     },
     "vendor": {
       "path": "vendor",
       "purpose": "Third-party code",
       "fileCount": 0,
-      "lastAccessed": 1775699977377,
+      "lastAccessed": 1775807788304,
       "keyFiles": []
     },
     "src\\components": {
       "path": "src\\components",
       "purpose": "UI components",
       "fileCount": 116,
-      "lastAccessed": 1775699977383,
+      "lastAccessed": 1775807788330,
       "keyFiles": [
         "AgentProgressLine.tsx",
         "AntModelSwitchCallout.tsx",
@@ -178,7 +181,7 @@
       "path": "tests\\mocks",
       "purpose": "Mock data",
       "fileCount": 2,
-      "lastAccessed": 1775699977384,
+      "lastAccessed": 1775807788335,
       "keyFiles": [
         "api-responses.ts",
         "file-system.ts"
@@ -187,303 +190,303 @@
   },
   "hotPaths": [
     {
-      "path": "src\\main.tsx",
-      "accessCount": 29,
-      "lastAccessed": 1775725223582,
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\feedback_agent_architecture_preference.md",
+      "accessCount": 14,
+      "lastAccessed": 1775828572289,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\project_pr15_strictspec_refactoring.md",
+      "accessCount": 7,
+      "lastAccessed": 1775828508474,
       "type": "file"
     },
     {
       "path": "src",
-      "accessCount": 18,
-      "lastAccessed": 1775725138610,
-      "type": "directory"
-    },
-    {
-      "path": "src\\constants\\github-app.ts",
-      "accessCount": 12,
-      "lastAccessed": 1775724770054,
-      "type": "file"
-    },
-    {
-      "path": "src\\bridge\\bridgeMain.ts",
-      "accessCount": 12,
-      "lastAccessed": 1775724821073,
-      "type": "file"
-    },
-    {
-      "path": "src\\constants\\prompts.ts",
-      "accessCount": 11,
-      "lastAccessed": 1775724782361,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\ultraplan.tsx",
-      "accessCount": 8,
-      "lastAccessed": 1775724599065,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\LogoV2\\CondensedLogo.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1775718295716,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\LogoV2\\WelcomeV2.tsx",
-      "accessCount": 6,
-      "lastAccessed": 1775718295787,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\LogoV2\\Clawd.tsx",
-      "accessCount": 6,
-      "lastAccessed": 1775718295895,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\thinkback\\thinkback.tsx",
-      "accessCount": 6,
-      "lastAccessed": 1775722174864,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 6,
-      "lastAccessed": 1775724060323,
-      "type": "directory"
-    },
-    {
-      "path": "src\\bridge\\bridgeEnabled.ts",
       "accessCount": 5,
-      "lastAccessed": 1775724776670,
-      "type": "file"
+      "lastAccessed": 1775816721051,
+      "type": "directory"
     },
     {
-      "path": "src\\cli\\update.ts",
+      "path": "src\\tools\\AgentTool\\builtInAgents.ts",
       "accessCount": 4,
-      "lastAccessed": 1775722843167,
+      "lastAccessed": 1775815092181,
       "type": "file"
     },
     {
-      "path": "src\\bridge\\envLessBridgeConfig.ts",
+      "path": "src\\costrict\\agents\\strictSpec.ts",
       "accessCount": 4,
-      "lastAccessed": 1775722984152,
+      "lastAccessed": 1775815170149,
       "type": "file"
     },
     {
-      "path": "src\\bridge\\trustedDevice.ts",
+      "path": "README_EN.md",
       "accessCount": 4,
-      "lastAccessed": 1775723110426,
+      "lastAccessed": 1775816609611,
       "type": "file"
     },
     {
-      "path": "scripts\\defines.ts",
-      "accessCount": 3,
-      "lastAccessed": 1775721967631,
-      "type": "file"
-    },
-    {
-      "path": "src\\cli\\handlers\\mcp.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1775722843764,
-      "type": "file"
-    },
-    {
-      "path": "src\\utils\\settings\\types.ts",
-      "accessCount": 3,
-      "lastAccessed": 1775725238439,
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\user_strict_workflow_usage.md",
+      "accessCount": 4,
+      "lastAccessed": 1775828508613,
       "type": "file"
     },
     {
       "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\user_project_context.md",
-      "accessCount": 2,
-      "lastAccessed": 1775706764513,
+      "accessCount": 3,
+      "lastAccessed": 1775812854584,
       "type": "file"
     },
     {
-      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\d0afd455-d4ab-400a-97f2-9401ba20e404\\tool-results\\toolu_01KGhj49wrMbbrucSw5xGuKK.txt",
-      "accessCount": 2,
-      "lastAccessed": 1775718497189,
-      "type": "file"
-    },
-    {
-      "path": "src\\constants\\system.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775718510480,
-      "type": "file"
-    },
-    {
-      "path": "src\\entrypoints\\cli.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1775721525046,
-      "type": "file"
-    },
-    {
-      "path": "src/entrypoints/cli.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1775721594284,
-      "type": "directory"
-    },
-    {
-      "path": "src/main.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1775721594305,
-      "type": "directory"
-    },
-    {
-      "path": "src\\commands\\stats\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721898353,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\status\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721898912,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\passes\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721899512,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\model\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721900118,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\stickers\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721909771,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\statusline.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1775721910409,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\plugin\\index.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1775721911269,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\remote-setup\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721912148,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\feedback\\index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775721923887,
+      "path": "docs\\design\\nested-agent\\prompts\\coding.md",
+      "accessCount": 3,
+      "lastAccessed": 1775814789887,
       "type": "file"
     },
     {
       "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1775816590516,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\nested-agent-design.md",
       "accessCount": 2,
-      "lastAccessed": 1775721959048,
+      "lastAccessed": 1775814652537,
       "type": "file"
     },
     {
-      "path": "C:\\Users\\SXF-Admin\\.claude",
+      "path": "docs\\design\\nested-agent\\prompts\\strictPlan.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814682608,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\strictSpec.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814699962,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\requirement.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814719406,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\design.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814735222,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\task.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814755929,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\explore.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814809320,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\README.md",
+      "accessCount": 2,
+      "lastAccessed": 1775814831958,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\strictPlan.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775815210686,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\feedback_validate_before_propose.md",
       "accessCount": 1,
-      "lastAccessed": 1775704289828,
+      "lastAccessed": 1775808730612,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundledSkills.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775811066190,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\verify.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775811079662,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\simplify.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775811079839,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\tdd.md",
+      "accessCount": 1,
+      "lastAccessed": 1775812544524,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\prompts\\writeTask.md",
+      "accessCount": 1,
+      "lastAccessed": 1775812590059,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\verifyContent.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814416108,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\batch.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814416229,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\skillify.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814430451,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\dream.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814430500,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\verify\\SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1775814445835,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814455161,
+      "type": "file"
+    },
+    {
+      "path": "src\\skills\\bundled\\scheduleRemoteAgents.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814455454,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\skill\\tdd.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814465999,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\skill\\strictPlan.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814466118,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\quickExplore.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814536214,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\taskPlan.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814553496,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\subCoding.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814553643,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\requirement.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775814564309,
+      "type": "file"
+    },
+    {
+      "path": "src\\tools\\AgentTool\\loadAgentsDir.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775815001572,
+      "type": "file"
+    },
+    {
+      "path": "docs\\design\\nested-agent\\IMPLEMENTATION_PLAN.md",
+      "accessCount": 1,
+      "lastAccessed": 1775815060388,
+      "type": "file"
+    },
+    {
+      "path": "src\\costrict\\agents\\depthGuard.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775815127341,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775816193392,
+      "type": "file"
+    },
+    {
+      "path": "docs",
+      "accessCount": 1,
+      "lastAccessed": 1775816197727,
       "type": "directory"
     },
     {
-      "path": "src\\utils\\thinking.ts",
+      "path": "scripts\\dev.ts",
       "accessCount": 1,
-      "lastAccessed": 1775705731914,
+      "lastAccessed": 1775816609737,
       "type": "file"
     },
     {
-      "path": "C:\\Users\\SXF-Admin\\.claude\\settings.json",
+      "path": "src\\main.tsx",
       "accessCount": 1,
-      "lastAccessed": 1775705732059,
+      "lastAccessed": 1775816623667,
       "type": "file"
     },
     {
-      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory",
+      "path": "",
       "accessCount": 1,
-      "lastAccessed": 1775705777495,
+      "lastAccessed": 1775816625229,
       "type": "directory"
     },
     {
-      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\memory\\project_thinking_config.md",
+      "path": "docs.json",
       "accessCount": 1,
-      "lastAccessed": 1775705805851,
+      "lastAccessed": 1775816640615,
       "type": "file"
     },
     {
-      "path": "src\\components\\LogoV2\\LogoV2.tsx",
+      "path": "docs\\introduction\\what-is-claude-code.mdx",
       "accessCount": 1,
-      "lastAccessed": 1775706655366,
+      "lastAccessed": 1775816640638,
       "type": "file"
     },
     {
-      "path": "src\\components\\LogoV2\\AnimatedAsterisk.tsx",
+      "path": "src\\utils\\slashCommandParsing.ts",
       "accessCount": 1,
-      "lastAccessed": 1775706663883,
+      "lastAccessed": 1775816662118,
       "type": "file"
     },
     {
-      "path": "src\\components\\LogoV2\\AnimatedClawd.tsx",
+      "path": "src\\utils\\processUserInput\\processSlashCommand.tsx",
       "accessCount": 1,
-      "lastAccessed": 1775706664113,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\design-system\\ThemeProvider.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1775707361784,
-      "type": "file"
-    },
-    {
-      "path": "src\\components\\design-system\\color.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775707361857,
-      "type": "file"
-    },
-    {
-      "path": "src\\utils\\theme.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775707362058,
-      "type": "file"
-    },
-    {
-      "path": "packages\\@ant\\ink\\src\\theme",
-      "accessCount": 1,
-      "lastAccessed": 1775707362175,
-      "type": "directory"
-    },
-    {
-      "path": "packages\\@ant\\ink\\src\\theme\\theme-types.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775707365280,
-      "type": "file"
-    },
-    {
-      "path": "C:\\Users\\SXF-Admin\\.claude\\projects\\D--source-codespace-geroge-costrict-repo-csc\\d0afd455-d4ab-400a-97f2-9401ba20e404\\tool-results\\toolu_01MNsrxYTX1NKRHX9Bj8oT5G.txt",
-      "accessCount": 1,
-      "lastAccessed": 1775718305848,
-      "type": "file"
-    },
-    {
-      "path": "src\\cli\\handlers\\autoMode.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775718505743,
-      "type": "file"
-    },
-    {
-      "path": "src\\bootstrap\\state.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775718515344,
+      "lastAccessed": 1775816662257,
       "type": "file"
     }
   ],
