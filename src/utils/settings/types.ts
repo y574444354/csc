@@ -361,13 +361,13 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe(
           'Deprecated: Use attribution instead. ' +
-            "Whether to include Claude's co-authored by attribution in commits and PRs (defaults to true)",
+            "Whether to include CoStrict's co-authored by attribution in commits and PRs (defaults to true)",
         ),
       includeGitInstructions: z
         .boolean()
         .optional()
         .describe(
-          "Include built-in commit and PR workflow instructions in Claude's system prompt (default: true)",
+          "Include built-in commit and PR workflow instructions in CoStrict's system prompt (default: true)",
         ),
       permissions: PermissionsSchema()
         .optional()
