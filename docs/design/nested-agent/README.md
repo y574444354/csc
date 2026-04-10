@@ -1,0 +1,125 @@
+# 多层嵌套Agent设计文档
+
+## 文档结构
+
+```
+docs/design/nested-agent/
+├── README.md              # 本文件 - 文档索引
+├── nested-agent-design.md # 核心设计文档
+└── prompts/              # Agent Prompt模板
+    ├── strictPlan.md     # StrictPlan (L0)
+    ├── strictSpec.md     # StrictSpec (L0)
+    ├── requirement.md    # Requirement (L1)
+    ├── design.md         # DesignAgent (L1)
+    ├── task.md           # TaskPlan (L1)
+    ├── coding.md         # SubCoding (L1)
+    ├── explore.md        # QuickExplore (L2)
+    ├── tdd.md            # TDD流程
+    └── writeTask.md      # WriteTask
+```
+
+## 快速导航
+
+### 核心设计
+- [nested-agent-design.md](./nested-agent-design.md) - 整体架构、Agent定义、深度控制矩阵
+
+### Agent Prompts (基于现有实现)
+| Agent | 层级 | Prompt文件 |
+|-------|------|-----------|
+| StrictPlan | L0 | [strictPlan.md](./prompts/strictPlan.md) |
+| StrictSpec | L0 | [strictSpec.md](./prompts/strictSpec.md) |
+| Requirement | L1 | [requirement.md](./prompts/requirement.md) |
+| DesignAgent | L1 | [design.md](./prompts/design.md) |
+| TaskPlan | L1 | [task.md](./prompts/task.md) |
+| SubCoding | L1 | [coding.md](./prompts/coding.md) |
+| QuickExplore | L2 | [explore.md](./prompts/explore.md) |
+
+## 架构总览
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              用户请求                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ▼                               ▼
+        ┌───────────────────────┐       ┌───────────────────────┐
+        │     StrictSpec (L0)    │       │     StrictPlan (L0)    │
+        │   工作流编排Agent       │       │     计划执行Agent       │
+        └───────────────────────┘       └───────────────────────┘
+                    │                               │
+                    ▼                               │
+        ┌───────────────────────┐                   │
+        │   Requirement (L1)    │                   │
+        └───────────────────────┘                   │
+                    ▼                               │
+        ┌───────────────────────┐                   │
+        │    DesignAgent (L1)    │                   │
+        └───────────────────────┘                   │
+                    ▼                               │
+        ┌───────────────────────┐                   │
+        │     TaskPlan (L1)      │                   │
+        └───────────────────────┘                   │
+                    ▼                               │
+        ┌───────────────────────┐                   │
+        │    SubCoding (L1)     │ ──────────────────┘
+        └───────────────────────┘
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+    ┌─────────┐ ┌─────────┐ ┌─────────┐
+    │ Quick   │ │ Sub     │ │  TDD    │
+    │Explore │ │ Coding  │ │ Agents  │
+    │ (L2)   │ │ (L2)    │ │         │
+    └─────────┘ └─────────┘ └─────────┘
+```
+
+## Agent定义（现有实现）
+
+| Agent | 文件路径 | 层级 | 职责 |
+|-------|---------|------|------|
+| StrictPlan | `src/costrict/agents/strictPlan.ts` | L0 | 需求→探索→澄清→提案→实施 |
+| StrictSpec | `src/costrict/agents/strictSpec.ts` | L0 | 工作流编排 |
+| Requirement | `src/costrict/agents/requirement.ts` | L1 | 需求分析 |
+| DesignAgent | `src/costrict/agents/designAgent.ts` | L1 | 架构设计 |
+| TaskPlan | `src/costrict/agents/taskPlan.ts` | L1 | 任务规划 |
+| SubCoding | `src/costrict/agents/subCoding.ts` | L1 | 编码实施 |
+| QuickExplore | `src/costrict/agents/quickExplore.ts` | L2 | 代码探索 |
+
+## TDD集成
+
+### TDD相关Agent
+
+| Agent | 文件路径 | 职责 |
+|-------|---------|------|
+| tddRunAndFix | `src/costrict/agents/tddRunAndFix.ts` | 执行测试并修复 |
+| tddTestDesign | `src/costrict/agents/tddTestDesign.ts` | 测试用例设计 |
+| tddTestAndFix | `src/costrict/agents/tddTestAndFix.ts` | 测试设计与修复 |
+| tddTestPrepare | `src/costrict/agents/tddTestPrepare.ts` | 测试准备 |
+
+### TDD Skill
+
+- 文件: `src/costrict/skill/tdd.ts`
+- 命令: `/test`
+
+## 深度控制
+
+| Agent | 可spawn | 叶子节点 |
+|-------|---------|----------|
+| StrictPlan | QuickExplore, SubCoding | - |
+| StrictSpec | Requirement, DesignAgent, TaskPlan, SubCoding | - |
+| SubCoding | QuickExplore, TDD | - |
+| QuickExplore | - | ✓ |
+
+## 使用示例
+
+```
+# 使用StrictPlan
+/strict-plan 实现一个计算器
+
+# 使用StrictSpec完整流程
+/strict-spec 实现一个用户登录系统
+
+# 使用TDD
+/test
+```

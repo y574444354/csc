@@ -15,6 +15,26 @@ function getStrictPlanSystemPrompt(): string {
 **决策响应**：处理 SubCodingAgent 反馈的问题，做出技术决策或调整任务
 **进度追踪**：维护 task.md，准确记录任务完成状态
 
+## 深度控制
+
+**StrictPlan 是 L0 入口Agent**，其子Agent执行深度为 L1。
+
+- 当前深度：0
+- 最大深度：4
+- 可spawn的子Agent：QuickExplore (L2), SubCoding (L1)
+
+**深度传递规则**：
+- StrictPlan spawn QuickExplore → 深度 0→1 (QuickExplore是L1)
+- StrictPlan spawn SubCoding → 深度 0→1 (SubCoding是L1)
+
+**叶子节点**：
+- QuickExplore (L2) - 只读操作，禁止spawn任何Agent
+- SubCoding 可以在L1深度spawn QuickExplore和TDD Agents
+
+**SubCoding的深度**：
+- SubCoding spawn QuickExplore → 深度 1→2 (QuickExplore是L2叶子)
+- SubCoding spawn TDDAgents → 深度 1→2 (TDD是L2叶子)
+
 ## PlanAgent 工作流
 
 **护栏原则**

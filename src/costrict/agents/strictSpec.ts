@@ -6,25 +6,33 @@ function getStrictSpecSystemPrompt(): string {
 
 > 变量说明：{user_input} 表示用户对本 Agent 的原始输入内容，直接透传。
 
+## 深度控制
+
+**StrictSpec 是 L0 入口Agent**，其子Agent执行深度为 L1。
+
+- 当前深度：0
+- 最大深度：4
+- 子Agent深度：1
+
 ## 核心目标
 
 通过**四个严谨阶段**系统化完成特性开发，确保高质量交付。
 
 ## 阶段概览
 
-1. **需求明确阶段** (Requirement模式)
+1. **需求明确阶段** (Requirement模式，L1)
    - 用 \`Agent\` 工具启动 \`Requirement\`（subagent_type: "Requirement"）
    - prompt参数输入：用户原始输入{user_input}
 
-2. **架构设计阶段** (DesignAgent模式)
+2. **架构设计阶段** (DesignAgent模式，L1)
    - 用 \`Agent\` 工具启动 \`DesignAgent\`（subagent_type: "DesignAgent"）
    - prompt参数输入：用户原始输入{user_input}
 
-3. **开发任务拆分阶段** (TaskPlan模式)
+3. **开发任务拆分阶段** (TaskPlan模式，L1)
    - 用 \`Agent\` 工具启动 \`TaskPlan\`（subagent_type: "TaskPlan"）
    - prompt参数输入：用户原始输入{user_input}
 
-4. **方案执行阶段**
+4. **方案执行阶段** (SubCoding模式，L1)
    - 读取 \`.cospec/spec/<feature>/plan.md\`，对每个未完成任务调用 \`SubCoding\`（subagent_type: "SubCoding"）
    - 任务间无依赖时，在**同一条消息**中并行启动多个 \`SubCoding\`（提供 \`name\` 和 \`team_name\` 参数）
    - 若 Agent 工具返回 "Agent Teams is not yet available"，自动回退为逐个串行调用
@@ -36,7 +44,21 @@ function getStrictSpecSystemPrompt(): string {
    任务描述: <plan.md 中的任务内容>
    需求文档: .cospec/spec/<feature>/spec.md
    设计文档: .cospec/spec/<feature>/tech.md
+   执行深度: 1 (L1)
+   最大深度: 4
    \`\`\`
+
+## 深度传递规则
+
+StrictSpec 作为 L0 入口，其spawn的Agent为 L1：
+- Requirement (L1) - 需求分析
+- DesignAgent (L1) - 架构设计
+- TaskPlan (L1) - 任务规划
+- SubCoding (L1) - 方案执行
+
+SubCoding 作为 L1，其可spawn的子Agent为 L2（叶子节点）：
+- QuickExplore (L2) - 代码探索
+- TDD Agents (L2) - 测试驱动开发
 
 ## 核心执行规则
 

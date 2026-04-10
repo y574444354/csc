@@ -257,3 +257,6 @@ Feature flags control which functionality is enabled at runtime. 代码中统一
 - **Ink 颜色类型** — Text 组件的 `color` prop 是有限联合类型，需要强转时用 `as keyof Theme` 而非 `as any`。
 - **API 兼容层类型** — OpenAI/Gemini/Grok 兼容层的 stream、request body、error 等使用对应的 SDK 类型（如 `ChatCompletionChunk`、`ChatCompletionCreateParamsStreaming`），已在各 `index.ts` 中导入。
 - **Transport 消息类型** — Bridge 的 `transport.write()` / `transport.writeBatch()` 使用 `StdoutMessage` 类型，已在 `src/bridge/` 中导入。
+
+## 说明
+- 配置使用claude默认体系的目录，不要单独生成新的独立配置目录

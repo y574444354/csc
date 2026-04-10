@@ -1,16 +1,16 @@
 {
-  "name": "claude-code-best",
-  "version": "1.2.1",
+  "name": "@costrict/csc-beta",
+  "version": "4.0.1",
   "description": "Reverse-engineered Anthropic Claude Code CLI — interactive AI coding assistant in the terminal",
   "type": "module",
   "author": "claude-code-best <claude-code-best@proton.me>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/claude-code-best/claude-code.git"
+    "url": "git+https://github.com/y574444354/csc.git"
   },
-  "homepage": "https://github.com/claude-code-best/claude-code#readme",
+  "homepage": "https://github.com/y574444354/csc#readme",
   "bugs": {
-    "url": "https://github.com/claude-code-best/claude-code/issues"
+    "url": "https://github.com/y574444354/csc/issues"
   },
   "keywords": [
     "claude",
