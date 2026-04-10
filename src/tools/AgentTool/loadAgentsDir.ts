@@ -130,6 +130,10 @@ export type BaseAgentDefinition = {
    * full CLAUDE.md and interprets their output. Saves ~5-15 Gtok/week across
    * 34M+ Explore spawns. Kill-switch: tengu_slim_subagent_claudemd. */
   omitClaudeMd?: boolean
+  /** When true, resolveAgentTools skips filterToolsForAgent so the agent
+   * receives the full main-thread tool pool (including Agent tool).
+   * Use for agents launched directly via slash command from the main thread. */
+  isMainThread?: boolean
 }
 
 // Built-in agents - dynamic prompts only, no static systemPrompt field

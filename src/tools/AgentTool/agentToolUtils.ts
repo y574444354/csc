@@ -122,7 +122,7 @@ export function filterToolsForAgent({
 export function resolveAgentTools(
   agentDefinition: Pick<
     AgentDefinition,
-    'tools' | 'disallowedTools' | 'source' | 'permissionMode'
+    'tools' | 'disallowedTools' | 'source' | 'permissionMode' | 'isMainThread'
   >,
   availableTools: Tools,
   isAsync = false,
@@ -133,11 +133,15 @@ export function resolveAgentTools(
     disallowedTools,
     source,
     permissionMode,
+    isMainThread: agentIsMainThread,
   } = agentDefinition
-  // When isMainThread is true, skip filterToolsForAgent entirely — the main
-  // thread's tool pool is already properly assembled by useMergedTools(), so
+  // Allow the agent definition itself to declare isMainThread=true,
+  // which takes precedence over the isMainThread parameter.
+  const effectiveIsMainThread = agentIsMainThread ?? isMainThread
+  // When effectiveIsMainThread is true, skip filterToolsForAgent entirely — the
+  // main thread's tool pool is already properly assembled by useMergedTools(), so
   // the sub-agent disallow lists shouldn't apply.
-  const filteredAvailableTools = isMainThread
+  const filteredAvailableTools = effectiveIsMainThread
     ? availableTools
     : filterToolsForAgent({
         tools: availableTools,
@@ -195,7 +199,7 @@ export function resolveAgentTools(
       }
       // For sub-agents, Agent is excluded by filterToolsForAgent — mark the spec
       // valid for allowedAgentTypes tracking but skip tool resolution.
-      if (!isMainThread) {
+      if (!effectiveIsMainThread) {
         validTools.push(toolSpec)
         continue
       }
