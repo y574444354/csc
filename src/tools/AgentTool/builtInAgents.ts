@@ -6,7 +6,7 @@ import { DESIGN_AGENT } from '../../costrict/agents/designAgent.js'
 import { QUICK_EXPLORE_AGENT } from '../../costrict/agents/quickExplore.js'
 import { REQUIREMENT_AGENT } from '../../costrict/agents/requirement.js'
 import { STRICT_PLAN_AGENT } from '../../costrict/agents/strictPlan.js'
-import { STRICT_SPEC_AGENT } from '../../costrict/agents/strictSpec.js'
+// import { STRICT_SPEC_AGENT } from '../../costrict/agents/strictSpec.js'
 import { SUB_CODING_AGENT } from '../../costrict/agents/subCoding.js'
 import { TASK_CHECK_AGENT } from '../../costrict/agents/taskCheck.js'
 import { TASK_PLAN_AGENT } from '../../costrict/agents/taskPlan.js'
@@ -64,7 +64,7 @@ export function getBuiltInAgents(): AgentDefinition[] {
     STATUSLINE_SETUP_AGENT,
     PLAN_AGENT,
     // StrictSpec workflow: 4-stage pipeline (Requirement → DesignAgent → TaskPlan → SubCoding)
-    STRICT_SPEC_AGENT,
+    // STRICT_SPEC_AGENT,
     REQUIREMENT_AGENT,
     DESIGN_AGENT,
     TASK_PLAN_AGENT,
