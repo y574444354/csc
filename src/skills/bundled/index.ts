@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle'
 import { shouldAutoEnableClaudeInChrome } from 'src/utils/claudeInChrome/setup.js'
-import { registerCodeReviewSecuritySkill } from 'src/costrict/skill/codeReviewSecurity.js'
+import { registerCodeReviewSecuritySkill } from 'src/costrict/skills/codeReviewSecurity.js'
 import { registerBatchSkill } from './batch.js'
 import { registerClaudeInChromeSkill } from './claudeInChrome.js'
 import { registerDebugSkill } from './debug.js'
@@ -15,9 +15,10 @@ import { registerLoopSkill } from './loop.js'
 import { registerDreamSkill } from './dream.js'
 import { registerUpdateConfigSkill } from './updateConfig.js'
 import { registerVerifySkill } from './verify.js'
-import { registerStrictPlanSkill } from '../../costrict/skill/strictPlan.js'
-import { registerProjectWikiSkill } from 'src/costrict/skill/projectWiki.js'
-import { registerTddSkill } from 'src/costrict/skill/tdd.js'
+import { registerStrictPlanSkill } from '../../costrict/skills/strictPlan.js'
+import { registerStrictSpecSkill } from '../../costrict/skills/strictSpec.js'
+import { registerProjectWikiSkill } from 'src/costrict/skills/projectWiki.js'
+import { registerTddSkill } from 'src/costrict/skills/tdd.js'
 
 /**
  * Initialize all bundled skills.
@@ -34,6 +35,7 @@ export function initBundledSkills(): void {
   registerProjectWikiSkill()
   registerTddSkill()
   registerStrictPlanSkill()
+  registerStrictSpecSkill()
   registerKeybindingsSkill()
   registerVerifySkill()
   registerDebugSkill()

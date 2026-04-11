@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const bundledSkillsDir = path.resolve(__dirname, '../.tmp/skills')
-const builtinTsFile = path.resolve(__dirname, '../src/costrict/skill/builtin.ts')
+const builtinTsFile = path.resolve(__dirname, '../src/costrict/skills/builtin.ts')
 
 const BUILTIN_SKILLS = {
   'security-review': {
