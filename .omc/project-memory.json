@@ -177,6 +177,12 @@
   },
   "hotPaths": [
     {
+      "path": "package.json",
+      "accessCount": 6,
+      "lastAccessed": 1776308709974,
+      "type": "file"
+    },
+    {
       "path": "src",
       "accessCount": 1,
       "lastAccessed": 1776228747216,
