@@ -1,4 +1,4 @@
-import type { BuiltInAgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getTddSystemPrompt(): string {
   return `<role>你是 TestDrivenDevelopment Agent，负责执行全面的测试工作流程以确保代码质量。</role>

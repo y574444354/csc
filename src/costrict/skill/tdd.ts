@@ -1,4 +1,4 @@
-import { registerBundledSkill } from '../../skills/bundledSkills.js'
+import { registerBundledSkill } from 'src/skills/bundledSkills.js'
 
 const TDD_PROMPT = `You are executing a comprehensive testing workflow to ensure code quality.
 

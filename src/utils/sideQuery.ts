@@ -27,6 +27,8 @@ import { getModelBetas, modelSupportsStructuredOutputs } from './betas.js'
 import { computeFingerprint } from './fingerprint.js'
 import { normalizeModelStringForAPI } from './model/model.js'
 import { getAPIProvider } from './model/providers.js'
+import { asSystemPrompt } from './systemPromptType.js'
+import type { UserMessage, AssistantMessage } from '../types/message.js'
 
 type MessageParam = Anthropic.MessageParam
 type TextBlockParam = Anthropic.TextBlockParam
@@ -257,7 +259,9 @@ async function sideQueryCoStrict(opts: SideQueryOptions): Promise<BetaMessage> {
 
   // Build system prompt
   const systemContent = skipSystemPromptPrefix
-    ? (typeof system === 'string' ? system : '')
+    ? typeof system === 'string'
+      ? system
+      : ''
     : `${getCLISyspromptPrefix({ isNonInteractive: false, hasAppendSystemPrompt: false })}
 ${typeof system === 'string' ? system : ''}`
 
@@ -275,18 +279,15 @@ ${typeof system === 'string' ? system : ''}`
     maxRetries: 0,
     timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
     dangerouslyAllowBrowser: true,
-    fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as RequestInit,
+    fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as any,
     fetch: costrictFetch as any,
   })
 
   // Convert messages to OpenAI format
   const openaiMessages = anthropicMessagesToOpenAI(
-    messages.map(m => ({
-      ...m,
-      content: typeof m.content === 'string' ? m.content : m.content,
-    })),
-    systemContent,
-    { enableThinking: false }
+    messages as unknown as (UserMessage | AssistantMessage)[],
+    asSystemPrompt([systemContent]),
+    { enableThinking: false },
   )
 
   // Build request
@@ -299,7 +300,7 @@ ${typeof system === 'string' ? system : ''}`
 
   // Add response_format for JSON schema if specified
   if (output_format?.type === 'json_schema') {
-    (requestBody as any).response_format = {
+    ;(requestBody as any).response_format = {
       type: 'json_schema',
       json_schema: {
         name: 'response',
@@ -333,15 +334,19 @@ ${typeof system === 'string' ? system : ''}`
   const now = Date.now()
   const lastCompletion = getLastApiCompletionTimestamp()
   logEvent('tengu_api_success', {
-    requestId: response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    querySource: opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    model: costrictModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    requestId:
+      response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    querySource:
+      opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    model:
+      costrictModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     inputTokens: response.usage?.prompt_tokens || 0,
     outputTokens: response.usage?.completion_tokens || 0,
     cachedInputTokens: 0,
     uncachedInputTokens: 0,
     durationMsIncludingRetries: now - start,
-    timeSinceLastApiCallMs: lastCompletion !== null ? now - lastCompletion : undefined,
+    timeSinceLastApiCallMs:
+      lastCompletion !== null ? now - lastCompletion : undefined,
   })
   setLastApiCompletionTimestamp(now)
 
@@ -365,7 +370,9 @@ async function sideQueryOpenAI(opts: SideQueryOptions): Promise<BetaMessage> {
 
   // Build system prompt
   const systemContent = skipSystemPromptPrefix
-    ? (typeof system === 'string' ? system : '')
+    ? typeof system === 'string'
+      ? system
+      : ''
     : `${getCLISyspromptPrefix({ isNonInteractive: false, hasAppendSystemPrompt: false })}
 ${typeof system === 'string' ? system : ''}`
 
@@ -377,12 +384,9 @@ ${typeof system === 'string' ? system : ''}`
 
   // Convert messages to OpenAI format
   const openaiMessages = anthropicMessagesToOpenAI(
-    messages.map(m => ({
-      ...m,
-      content: typeof m.content === 'string' ? m.content : m.content,
-    })),
-    systemContent,
-    { enableThinking: false }
+    messages as unknown as (UserMessage | AssistantMessage)[],
+    asSystemPrompt([systemContent]),
+    { enableThinking: false },
   )
 
   // Build request
@@ -395,7 +399,7 @@ ${typeof system === 'string' ? system : ''}`
 
   // Add response_format for JSON schema if specified
   if (output_format?.type === 'json_schema') {
-    (requestBody as any).response_format = {
+    ;(requestBody as any).response_format = {
       type: 'json_schema',
       json_schema: {
         name: 'response',
@@ -429,15 +433,19 @@ ${typeof system === 'string' ? system : ''}`
   const now = Date.now()
   const lastCompletion = getLastApiCompletionTimestamp()
   logEvent('tengu_api_success', {
-    requestId: response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    querySource: opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    model: openaiModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    requestId:
+      response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    querySource:
+      opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    model:
+      openaiModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     inputTokens: response.usage?.prompt_tokens || 0,
     outputTokens: response.usage?.completion_tokens || 0,
     cachedInputTokens: 0,
     uncachedInputTokens: 0,
     durationMsIncludingRetries: now - start,
-    timeSinceLastApiCallMs: lastCompletion !== null ? now - lastCompletion : undefined,
+    timeSinceLastApiCallMs:
+      lastCompletion !== null ? now - lastCompletion : undefined,
   })
   setLastApiCompletionTimestamp(now)
 

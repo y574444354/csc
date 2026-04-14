@@ -1,5 +1,5 @@
 import { getProjectRoot } from '../../bootstrap/state.js'
-import { registerBundledSkill } from '../../skills/bundledSkills.js'
+import { registerBundledSkill } from 'src/skills/bundledSkills.js'
 
 // Orchestrator prompt for the /project-wiki skill.
 // Uses `Agent` tool (CSC equivalent of opencode's `task` tool) to delegate

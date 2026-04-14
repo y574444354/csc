@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { Theme } from '@anthropic/ink';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -1251,7 +1252,7 @@ function OAuthStatusMessage({
         <Box flexDirection="column" gap={1}>
           <Text>Opening browser for CoStrict login. If it does not open automatically, copy and paste this URL:</Text>
           <Box marginY={1}>
-            <Text color="cyan">{oauthStatus.url}</Text>
+            <Text color={'cyan' as keyof Theme}>{oauthStatus.url}</Text>
           </Box>
           <Text dimColor>Waiting for authentication...</Text>
         </Box>

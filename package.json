@@ -1,5 +1,5 @@
 {
-  "name": "@costrict/csc-beta",
+  "name": "@costrict/csc",
   "version": "4.0.4",
 
   "description": "Reverse-engineered Anthropic Claude Code CLI — interactive AI coding assistant in the terminal",

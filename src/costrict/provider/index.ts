@@ -4,6 +4,7 @@
  */
 
 import type { BetaToolUnion } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
+import type { SDKAssistantMessageError } from '../../entrypoints/agentSdkTypes.js'
 import type { SystemPrompt } from '../../utils/systemPromptType.js'
 import type {
   Message,
@@ -46,7 +47,10 @@ export async function* queryModelCoStrict(
   tools: Tools,
   signal: AbortSignal,
   options: Options,
-): AsyncGenerator<StreamEvent | AssistantMessage | SystemAPIErrorMessage, void> {
+): AsyncGenerator<
+  StreamEvent | AssistantMessage | SystemAPIErrorMessage,
+  void
+> {
   try {
     // 1. 解析模型名
     const costrictModel = resolveCoStrictModel(options.model)
@@ -73,7 +77,7 @@ export async function* queryModelCoStrict(
     )
     const standardTools = toolSchemas.filter(
       (t): t is BetaToolUnion & { type: string } => {
-        const anyT = t as Record<string, unknown>
+        const anyT = t as unknown as Record<string, unknown>
         return (
           anyT.type !== 'advisor_20260301' && anyT.type !== 'computer_20250124'
         )
@@ -81,7 +85,11 @@ export async function* queryModelCoStrict(
     )
 
     // 5. 转换为 OpenAI 格式
-    const openaiMessages = anthropicMessagesToOpenAI(messagesForAPI, systemPrompt, { enableThinking: true })
+    const openaiMessages = anthropicMessagesToOpenAI(
+      messagesForAPI,
+      systemPrompt,
+      { enableThinking: true },
+    )
     const openaiTools = anthropicToolsToOpenAI(standardTools)
     const openaiToolChoice = anthropicToolChoiceToOpenAI(options.toolChoice)
 
@@ -93,7 +101,9 @@ export async function* queryModelCoStrict(
       maxRetries: 0,
       timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
       dangerouslyAllowBrowser: true,
-      fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as RequestInit,
+      fetchOptions: getProxyFetchOptions({
+        forAnthropicAPI: false,
+      }) as any,
       fetch: costrictFetch as any,
     })
 
@@ -108,7 +118,10 @@ export async function* queryModelCoStrict(
         messages: openaiMessages,
         ...(openaiTools.length > 0 && {
           tools: openaiTools,
-          ...(openaiToolChoice && { tool_choice: openaiToolChoice }),
+          ...(openaiToolChoice && {
+            tool_choice:
+              openaiToolChoice as OpenAI.Chat.Completions.ChatCompletionToolChoiceOption,
+          }),
         }),
         stream: true,
         stream_options: { include_usage: true },
@@ -123,7 +136,7 @@ export async function* queryModelCoStrict(
     const adaptedStream = adaptOpenAIStreamToAnthropic(stream, costrictModel)
 
     const contentBlocks: Record<number, any> = {}
-    let partialMessage: any = undefined
+    let partialMessage: any
     let usage = {
       input_tokens: 0,
       output_tokens: 0,
@@ -139,7 +152,7 @@ export async function* queryModelCoStrict(
           partialMessage = (event as any).message
           ttftMs = Date.now() - start
           if ((event as any).message?.usage) {
-            usage = { ...usage, ...((event as any).message.usage) }
+            usage = { ...usage, ...(event as any).message.usage }
           }
           break
         }
@@ -219,7 +232,10 @@ export async function* queryModelCoStrict(
     yield createAssistantAPIErrorMessage({
       content: `CoStrict API Error: ${errorMsg}`,
       apiError: 'api_error',
-      error: error instanceof Error ? error : new Error(String(error)),
+      error:
+        error instanceof Error
+          ? (error as unknown as SDKAssistantMessageError)
+          : undefined,
     })
   }
 }
