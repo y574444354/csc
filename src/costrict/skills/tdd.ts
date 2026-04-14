@@ -116,6 +116,7 @@ export function registerTddSkill(): void {
     description:
       'execute comprehensive testing workflow: confirm requirements, generate test cases, and execute tests with automated fixes',
     userInvocable: true,
+    disableModelInvocation: true,
     async getPromptForCommand(args) {
       const prompt = TDD_PROMPT.replace(/\$ARGUMENTS/g, args || '')
       return [{ type: 'text', text: prompt }]

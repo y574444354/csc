@@ -11,6 +11,7 @@ export function registerCodeReviewSecuritySkill(): void {
     whenToUse:
       'Use when the user requests a code audit, security audit, or vulnerability scan; or mentions /code-review-security, /audit, or wants a security check before deployment',
     userInvocable: true,
+    disableModelInvocation: true,
     files,
     async getPromptForCommand() {
       return [{ type: 'text', text: skillMd }]

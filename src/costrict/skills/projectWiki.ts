@@ -212,6 +212,7 @@ export function registerProjectWikiSkill(): void {
     description:
       '为项目生成完整的技术文档体系，包括项目分析、文档结构设计、技术文档生成和索引文件创建。',
     userInvocable: true,
+    disableModelInvocation: true,
     async getPromptForCommand(args) {
       const path = getProjectRoot()
       const prompt = PROJECT_WIKI_PROMPT.replace(/\$\{path\}/g, path).replace(
