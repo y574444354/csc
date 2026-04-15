@@ -88,8 +88,27 @@ for (const file of files) {
   }
 }
 
+// Also patch unguarded globalThis.Bun destructuring from third-party deps
+// (e.g. @anthropic-ai/sandbox-runtime) so Node.js doesn't crash at import time.
+let bunPatched = 0
+const BUN_DESTRUCTURE = /var \{([^}]+)\} = globalThis\.Bun;?/g
+const BUN_DESTRUCTURE_SAFE = 'var {$1} = typeof globalThis.Bun !== "undefined" ? globalThis.Bun : {};'
+for (const file of files) {
+  if (!file.endsWith('.js')) continue
+  const filePath = join(outdir, file)
+  const content = await readFile(filePath, 'utf-8')
+  if (BUN_DESTRUCTURE.test(content)) {
+    await writeFile(
+      filePath,
+      content.replace(BUN_DESTRUCTURE, BUN_DESTRUCTURE_SAFE),
+    )
+    bunPatched++
+  }
+}
+BUN_DESTRUCTURE.lastIndex = 0
+
 console.log(
-  `Bundled ${result.outputs.length} files to ${outdir}/ (patched ${patched} for Node.js compat)`,
+  `Bundled ${result.outputs.length} files to ${outdir}/ (patched ${patched} for import.meta.require, ${bunPatched} for Bun destructure)`,
 )
 
 // Step 4: Copy native .node addon files (audio-capture)
