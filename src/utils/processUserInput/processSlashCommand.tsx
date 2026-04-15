@@ -75,6 +75,7 @@ import {
 import type { ModelAlias } from '../model/aliases.js'
 import { parseToolListFromCLI } from '../permissions/permissionSetup.js'
 import { hasPermissionsToUseTool } from '../permissions/permissions.js'
+import { permissionRuleValueFromString } from '../permissions/permissionRuleParser.js'
 import {
   isOfficialMarketplaceName,
   parsePluginIdentifier,
@@ -140,6 +141,20 @@ async function executeForkedSlashCommand(
 
   const { skillContent, modifiedGetAppState, baseAgent, promptMessages } =
     await prepareForkedCommandContext(command, args, context)
+
+  // Parse allowedAgentTypes from Agent(x,y,z) entries in the agent's tools list.
+  // runAgent inherits agentDefinitions from the parent toolUseContext without
+  // applying the agent's own Agent(x,y,z) restriction, so we must inject it here.
+  const forkedAllowedAgentTypes = (baseAgent.tools ?? []).reduce<string[]>(
+    (acc, toolSpec) => {
+      const { toolName, ruleContent } = permissionRuleValueFromString(toolSpec)
+      if (toolName === 'Agent' && ruleContent) {
+        acc.push(...ruleContent.split(',').map(s => s.trim()).filter(Boolean))
+      }
+      return acc
+    },
+    [],
+  )
 
   // Merge skill's effort into the agent definition so runAgent applies it
   const agentDefinition =
@@ -221,6 +236,13 @@ async function executeForkedSlashCommand(
           ...context,
           getAppState: modifiedGetAppState,
           abortController: bgAbortController,
+          options: forkedAllowedAgentTypes.length > 0 ? {
+            ...context.options,
+            agentDefinitions: {
+              ...context.options.agentDefinitions,
+              allowedAgentTypes: forkedAllowedAgentTypes,
+            },
+          } : context.options,
         },
         canUseTool,
         isAsync: true,
@@ -302,6 +324,13 @@ async function executeForkedSlashCommand(
       toolUseContext: {
         ...context,
         getAppState: modifiedGetAppState,
+        options: forkedAllowedAgentTypes.length > 0 ? {
+          ...context.options,
+          agentDefinitions: {
+            ...context.options.agentDefinitions,
+            allowedAgentTypes: forkedAllowedAgentTypes,
+          },
+        } : context.options,
       },
       canUseTool,
       isAsync: false,
