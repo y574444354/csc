@@ -94,5 +94,6 @@ export const STRICT_SPEC_AGENT: BuiltInAgentDefinition = {
   model: 'inherit',
   omitClaudeMd: false,
   isMainThread: true,
+  visibleTo: ['None'],
   getSystemPrompt: () => getStrictSpecSystemPrompt(),
 }

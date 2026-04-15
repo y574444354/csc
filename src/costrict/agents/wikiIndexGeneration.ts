@@ -99,5 +99,6 @@ export const WIKI_INDEX_GENERATION_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['WIKI'],
   getSystemPrompt: () => getWikiIndexGenerationSystemPrompt(),
 }

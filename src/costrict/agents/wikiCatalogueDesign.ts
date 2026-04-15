@@ -185,5 +185,6 @@ export const WIKI_CATALOGUE_DESIGN_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['WIKI'],
   getSystemPrompt: () => getWikiCatalogueDesignSystemPrompt(),
 }

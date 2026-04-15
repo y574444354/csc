@@ -142,5 +142,6 @@ export const TDD_TEST_DESIGN_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['TDD'],
   getSystemPrompt: () => getTddTestDesignSystemPrompt(),
 }

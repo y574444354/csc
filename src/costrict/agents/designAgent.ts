@@ -172,5 +172,6 @@ export const DESIGN_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['StrictSpec'],
   getSystemPrompt: () => getDesignAgentSystemPrompt(),
 }

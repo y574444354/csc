@@ -88,5 +88,6 @@ export const SUB_CODING_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['StrictPlan','StrictSpec'],
   getSystemPrompt: () => getSubCodingSystemPrompt(),
 }

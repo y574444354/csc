@@ -177,5 +177,6 @@ export const TASK_PLAN_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['StrictSpec'],
   getSystemPrompt: () => getTaskPlanSystemPrompt(),
 }

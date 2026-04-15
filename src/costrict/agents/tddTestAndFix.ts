@@ -163,5 +163,6 @@ export const TDD_TEST_AND_FIX_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['TDD'],
   getSystemPrompt: () => getTddTestAndFixSystemPrompt(),
 }

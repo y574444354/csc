@@ -178,5 +178,6 @@ export const QUICK_EXPLORE_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['StrictPlan'],
   getSystemPrompt: () => getQuickExploreSystemPrompt(),
 }

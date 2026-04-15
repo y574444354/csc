@@ -68,10 +68,12 @@ export async function getPrompt(
   isCoordinator?: boolean,
   allowedAgentTypes?: string[],
 ): Promise<string> {
-  // Filter agents by allowed types when Agent(x,y) restricts which agents can be spawned
+  // Filter agents by allowed types when Agent(x,y) restricts which agents can be spawned.
+  // In wildcard (no allowedAgentTypes) scenario, also hide agents that declare a visibleTo
+  // restriction — they are only meant for specific parent agent types.
   const effectiveAgents = allowedAgentTypes
     ? agentDefinitions.filter(a => allowedAgentTypes.includes(a.agentType))
-    : agentDefinitions
+    : agentDefinitions.filter(a => !a.visibleTo || a.visibleTo.length === 0)
 
   // Fork subagent feature: when enabled, insert the "When to fork" section
   // (fork semantics, directive-style prompts) and swap in fork-aware examples.

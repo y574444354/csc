@@ -14,6 +14,7 @@ import { CLAUDE_CODE_GUIDE_AGENT } from './built-in/claudeCodeGuideAgent.js'
 import { EXPLORE_AGENT } from './built-in/exploreAgent.js'
 import { GENERAL_PURPOSE_AGENT } from './built-in/generalPurposeAgent.js'
 import { PLAN_AGENT } from './built-in/planAgent.js'
+import { WIKI_AGENT } from 'src/costrict/agents/wiki.js'
 import { WIKI_PROJECT_ANALYZE_AGENT } from 'src/costrict/agents/wikiProjectAnalyze.js'
 import { WIKI_CATALOGUE_DESIGN_AGENT } from 'src/costrict/agents/wikiCatalogueDesign.js'
 import { WIKI_DOCUMENT_GENERATE_AGENT } from 'src/costrict/agents/wikiDocumentGenerate.js'
@@ -22,7 +23,7 @@ import { TDD_RUN_AND_FIX_AGENT } from 'src/costrict/agents/tddRunAndFix.js'
 import { TDD_TEST_AND_FIX_AGENT } from 'src/costrict/agents/tddTestAndFix.js'
 import { TDD_TEST_DESIGN_AGENT } from 'src/costrict/agents/tddTestDesign.js'
 import { TDD_TEST_PREPARE_AGENT } from 'src/costrict/agents/tddTestPrepare.js'
-import { TDD_AGENT } from 'src/costrict/backup/tdd.js'
+import { TDD_AGENT } from 'src/costrict/agents/tdd.js'
 import { STATUSLINE_SETUP_AGENT } from './built-in/statuslineSetup.js'
 import { VERIFICATION_AGENT } from './built-in/verificationAgent.js'
 import type { AgentDefinition } from './loadAgentsDir.js'
@@ -73,10 +74,13 @@ export function getBuiltInAgents(): AgentDefinition[] {
     SUB_CODING_AGENT,
     TASK_CHECK_AGENT,
     QUICK_EXPLORE_AGENT,
+    // WikiAgent workflow
+    WIKI_AGENT,
     WIKI_PROJECT_ANALYZE_AGENT,
     WIKI_CATALOGUE_DESIGN_AGENT,
     WIKI_DOCUMENT_GENERATE_AGENT,
     WIKI_INDEX_GENERATION_AGENT,
+    // TDD workflow
     TDD_RUN_AND_FIX_AGENT,
     TDD_TEST_AND_FIX_AGENT,
     TDD_TEST_DESIGN_AGENT,

@@ -134,6 +134,12 @@ export type BaseAgentDefinition = {
    * receives the full main-thread tool pool (including Agent tool).
    * Use for agents launched directly via slash command from the main thread. */
   isMainThread?: boolean
+  /** When set, this agent is only visible to the listed parent agent types and
+   * can only be scheduled by them. Callers whose `allowedAgentTypes` does not
+   * explicitly include this agent will not see it in their agent list.
+   * Example: `['StrictPlan']` means only the StrictPlan agent may schedule
+   * this agent. */
+  visibleTo?: string[]
 }
 
 // Built-in agents - dynamic prompts only, no static systemPrompt field

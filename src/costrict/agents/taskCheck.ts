@@ -127,5 +127,6 @@ export const TASK_CHECK_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['StrictPlan'],
   getSystemPrompt: () => getTaskCheckSystemPrompt(),
 }

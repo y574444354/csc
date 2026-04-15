@@ -164,5 +164,6 @@ export const TDD_TEST_PREPARE_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['TDD'],
   getSystemPrompt: () => getTddTestPrepareSystemPrompt(),
 }

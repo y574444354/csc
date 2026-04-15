@@ -610,6 +610,7 @@ export const REQUIREMENT_AGENT: BuiltInAgentDefinition = {
   source: 'built-in',
   baseDir: 'built-in',
   model: 'inherit',
+  visibleTo: ['StrictSpec'],
   omitClaudeMd: false,
   getSystemPrompt: () => getRequirementSystemPrompt(),
 }

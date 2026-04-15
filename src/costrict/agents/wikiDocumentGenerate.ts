@@ -300,5 +300,6 @@ export const WIKI_DOCUMENT_GENERATE_AGENT: BuiltInAgentDefinition = {
   baseDir: 'built-in',
   model: 'inherit',
   omitClaudeMd: false,
+  visibleTo: ['WIKI'],
   getSystemPrompt: () => getWikiDocumentGenerateSystemPrompt(),
 }
