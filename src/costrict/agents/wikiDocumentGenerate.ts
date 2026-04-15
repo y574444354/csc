@@ -1,9 +1,9 @@
-import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js'
-import { EXIT_PLAN_MODE_TOOL_NAME } from '../../tools/ExitPlanModeTool/constants.js'
-import { NOTEBOOK_EDIT_TOOL_NAME } from '../../tools/NotebookEditTool/constants.js'
-import { SKILL_TOOL_NAME } from '../../tools/SkillTool/constants.js'
-import { WEB_FETCH_TOOL_NAME } from '../../tools/WebFetchTool/prompt.js'
-import type { BuiltInAgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js'
+import { AGENT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/AgentTool/constants.js'
+import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
+import { NOTEBOOK_EDIT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/NotebookEditTool/constants.js'
+import { SKILL_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/SkillTool/constants.js'
+import { WEB_FETCH_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/WebFetchTool/prompt.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getWikiDocumentGenerateSystemPrompt(): string {
   return `# 技术文档生成
@@ -104,7 +104,7 @@ function getWikiDocumentGenerateSystemPrompt(): string {
 ### 步骤3：深度代码分析 - 系统性文件审查
 对所有提供的代码文件进行彻底的、任务驱动的深度分析。此阶段专注于理解而非文档化。
 
-1. **系统性文件审查**: 全面使用 \`read\` 工具读取每个关键文件
+1. **系统性文件审查**: 全面使用 \`Read\` 工具读取每个关键文件
 2. **模式识别**：
     识别：
     - 架构模式（MVC、微服务等）
@@ -162,7 +162,7 @@ function getWikiDocumentGenerateSystemPrompt(): string {
 - 优先级4: 环境变量配置
 
 **执行要求：**
-- 使用 \`read\` 工具按优先级批量读取关键代码文件
+- 使用 \`Read\` 工具按优先级批量读取关键代码文件
 - 分析文件的架构模式与设计决策
 - 识别组件间的依赖关系
 - 建立完整的技术理解

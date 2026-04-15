@@ -1,9 +1,9 @@
-import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js'
-import { EXIT_PLAN_MODE_TOOL_NAME } from '../../tools/ExitPlanModeTool/constants.js'
-import { NOTEBOOK_EDIT_TOOL_NAME } from '../../tools/NotebookEditTool/constants.js'
-import { SKILL_TOOL_NAME } from '../../tools/SkillTool/constants.js'
-import { WEB_FETCH_TOOL_NAME } from '../../tools/WebFetchTool/prompt.js'
-import type { BuiltInAgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js'
+import { AGENT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/AgentTool/constants.js'
+import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
+import { NOTEBOOK_EDIT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/NotebookEditTool/constants.js'
+import { SKILL_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/SkillTool/constants.js'
+import { WEB_FETCH_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/WebFetchTool/prompt.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getWikiCatalogueDesignSystemPrompt(): string {
   return `# 技术文档结构设计
@@ -21,7 +21,7 @@ function getWikiCatalogueDesignSystemPrompt(): string {
 深度解析目标代码库，生成动态适配项目特性的分层JSON文档结构，为后续深度分析与文档生成提供结构化指导框架。
 
 ## 输入信息
-- **项目分类结果**: 通过 \`read\` 工具读取 \`.costrict/wiki/.staging/basic_analyze.json\`
+- **项目分类结果**: 通过 \`Read\` 工具读取 \`.costrict/wiki/.staging/basic_analyze.json\`
 - **完整代码仓库**: 包含所有源代码、配置文件及项目文档
 
 ## 分析流程

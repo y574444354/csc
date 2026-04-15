@@ -37,6 +37,19 @@ const DEFAULT_FEATURES = [
   "KAIROS_BRIEF", "AWAY_SUMMARY", "ULTRAPLAN",
   // P2: daemon + remote control server
   "DAEMON",
+  // PR-package restored features
+  "WORKFLOW_SCRIPTS",
+  "HISTORY_SNIP",
+  "CONTEXT_COLLAPSE",
+  "MONITOR_TOOL",
+  "FORK_SUBAGENT",
+  "UDS_INBOX",
+  "KAIROS",
+  "COORDINATOR_MODE",
+  "LAN_PIPES",
+  // "REVIEW_ARTIFACT", // API 请求无响应，需进一步排查 schema 兼容性
+  // P3: poor mode (disable extract_memories + prompt_suggestion)
+  "POOR",
 ];
 
 // Any env var matching FEATURE_<NAME>=1 will also enable that feature.
@@ -53,8 +66,13 @@ const inspectArgs = process.env.BUN_INSPECT
     ? ["--inspect-wait=" + process.env.BUN_INSPECT]
     : [];
 
+// Use process.execPath to get the absolute path of the currently running Bun
+// executable. This works regardless of how Bun was installed (native installer,
+// npm, etc.) and on all platforms.
+const bunCmd = process.execPath;
+
 const result = Bun.spawnSync(
-    ["bun", ...inspectArgs, "run", ...defineArgs, ...featureArgs, cliPath, ...process.argv.slice(2)],
+    [bunCmd, ...inspectArgs, "run", ...defineArgs, ...featureArgs, cliPath, ...process.argv.slice(2)],
     { stdio: ["inherit", "inherit", "inherit"], cwd: projectRoot },
 );
 

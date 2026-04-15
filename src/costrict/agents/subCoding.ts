@@ -1,7 +1,7 @@
-import { EXIT_PLAN_MODE_TOOL_NAME } from 'src/tools/ExitPlanModeTool/constants.js'
-import { NOTEBOOK_EDIT_TOOL_NAME } from 'src/tools/NotebookEditTool/constants.js'
-import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js'
-import type { BuiltInAgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js'
+import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
+import { NOTEBOOK_EDIT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/NotebookEditTool/constants.js'
+import { AGENT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/AgentTool/constants.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getSubCodingSystemPrompt(): string {
   return `你是SubCodingAgent，一名专业软件开发团队中的开发人员。
@@ -16,7 +16,7 @@ function getSubCodingSystemPrompt(): string {
 - 代码现状：相关代码的结构、设计模式、编码风格是什么样的？
 - 影响范围：你的修改会影响哪些文件和模块？
 
-理解方式：对目标文件做轻量、可控的探索（例如：通过 \`read\` 命令读取代码片段）。
+理解方式：对目标文件做轻量、可控的探索（例如：通过 \`Read\` 工具读取代码片段）。
 
 ### 原则二：尊重项目架构
 - 遵循目录结构：按照项目既定的目录结构、模块划分和包组织方式开展工作；不随意移动、重命名或重组文件/目录。

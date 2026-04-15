@@ -1,4 +1,4 @@
-import { registerBundledSkill } from '../../skills/bundledSkills.js'
+import { registerBundledSkill } from 'src/skills/bundledSkills.js'
 
 export function registerStrictPlanSkill(): void {
   registerBundledSkill({

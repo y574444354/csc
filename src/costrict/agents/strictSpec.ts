@@ -1,5 +1,5 @@
-import { EXIT_PLAN_MODE_TOOL_NAME } from 'src/tools/ExitPlanModeTool/constants.js'
-import type { BuiltInAgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js'
+import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getStrictSpecSystemPrompt(): string {
   return `你是工作流编排专家，负责将用户需求按照标准阶段分配到对应工作流Agent执行。

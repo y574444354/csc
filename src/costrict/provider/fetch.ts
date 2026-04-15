@@ -19,7 +19,9 @@ import { createRequire } from 'module'
 function getVersion(): string {
   try {
     if (typeof MACRO !== 'undefined' && MACRO.VERSION) return MACRO.VERSION
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   try {
     const require = createRequire(import.meta.url)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -41,8 +43,11 @@ const VERSION = getVersion()
  * 3. 注入 Authorization 和 CoStrict 特有 headers
  * 4. 反应性 401 错误恢复（自动重试一次）
  */
-export function createCoStrictFetch(): typeof fetch {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
+export function createCoStrictFetch() {
+  const costrictFetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => {
     // ========== 步骤 1: 动态读取凭证 ==========
     let creds = await loadCoStrictCredentials()
 
@@ -119,4 +124,6 @@ export function createCoStrictFetch(): typeof fetch {
 
     return response
   }
+  costrictFetch.preconnect = fetch.preconnect.bind(fetch)
+  return costrictFetch
 }

@@ -36,12 +36,39 @@ export function getAPIProviderForStatsig(): AnalyticsMetadata_I_VERIFIED_THIS_IS
 }
 
 /**
+ * Get a human-readable display name for the current API provider
+ */
+export function getProviderDisplayName(provider: APIProvider): string {
+  switch (provider) {
+    case 'firstParty':
+      return 'Anthropic'
+    case 'bedrock':
+      return 'AWS Bedrock'
+    case 'vertex':
+      return 'Google Vertex'
+    case 'foundry':
+      return 'Foundry'
+    case 'openai':
+      return 'OpenAI'
+    case 'gemini':
+      return 'Google Gemini'
+    case 'grok':
+      return 'xAI Grok'
+    case 'costrict':
+      return 'CoStrict'
+    default:
+      return provider
+  }
+}
+
+/**
  * Check if ANTHROPIC_BASE_URL is a first-party Anthropic API URL.
  * Returns true if not set (default API) or points to api.anthropic.com
  * (or api-staging.anthropic.com for ant users).
  */
 export function isFirstPartyAnthropicBaseUrl(): boolean {
   const baseUrl = process.env.ANTHROPIC_BASE_URL
+  // TODO: 这里会有问题, 只配置了 openai 协议的用户, 按理说会为 true 导致问题
   if (!baseUrl) {
     return true
   }

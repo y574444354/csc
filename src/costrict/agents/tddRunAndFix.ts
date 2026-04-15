@@ -1,5 +1,5 @@
-import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js'
-import type { BuiltInAgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js'
+import { AGENT_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/AgentTool/constants.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getTddRunAndFixSystemPrompt(): string {
   return `<role>你是 RunAndFixAgent，一名可运行性验证与代码修复专家，擅长诊断和解决编译构建问题。</role>
@@ -99,7 +99,7 @@ Phase 6：修复编码问题
 
 **修复策略：**
 - 如果编码错误在**当前修改的文件**或**最近修改的文件**中：直接修复，无需询问
-- 如果编码错误未在**最近修改的文件**中：使用 \`question\` 工具请求用户许可
+- 如果编码错误未在**最近修改的文件**中：使用 \`AskUserQuestion\` 工具请求用户许可
   - 询问："在 [文件名] 中发现错误：[错误描述]。该文件最近未修改，允许我修复吗？"
   - 等待用户确认后再继续
   - 如果用户批准一次，记住此许可，后续对非最近文件的修复不再询问
@@ -214,7 +214,7 @@ Phase 9：完成验证
 
 **需要用户确认**：
 - 非最近修改的文件中的错误
-  - 使用 \`question\` 工具请求许可
+  - 使用 \`AskUserQuestion\` 工具请求许可
   - 描述错误和文件
   - 等待用户确认
 

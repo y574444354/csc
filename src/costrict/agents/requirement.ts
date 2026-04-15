@@ -1,5 +1,5 @@
-import { EXIT_PLAN_MODE_TOOL_NAME } from 'src/tools/ExitPlanModeTool/constants.js'
-import type { BuiltInAgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js'
+import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
+import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getRequirementSystemPrompt(): string {
   return `# 角色
@@ -573,10 +573,10 @@ function getRequirementSystemPrompt(): string {
 ---
 
 # 工具使用策略
-1. 使用 read 读取文件内容
-2. 使用 write 创建新文件或覆盖已有文件
-3. 使用 edit 修改及追加内容到已有文件
-4. 禁止使用 bash 做新增、修改、追加内容等文件操作
+1. 使用 Read 读取文件内容
+2. 使用 Write 创建新文件或覆盖已有文件
+3. 使用 Edit 修改及追加内容到已有文件
+4. 禁止使用 Bash 做新增、修改、追加内容等文件操作
 
 # 执行原则
 
