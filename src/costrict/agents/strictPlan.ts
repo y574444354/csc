@@ -177,7 +177,7 @@ export const STRICT_PLAN_AGENT: BuiltInAgentDefinition = {
     '根据用户的需求创建具体可实施的计划。Use this when you need to create structured, actionable implementation plans based on user requirements. This agent follows a strict workflow: understand requirements → QuickExplore project → clarify requirements → create proposal → implement proposal.',
   tools:[
     "AskUserQuestion",
-    "Agent", // Can spawn: QuickExplore, TaskCheck, SubCoding
+    "Agent(QuickExplore,TaskCheck,SubCoding)", // Can spawn: QuickExplore, TaskCheck, SubCoding
     "Read",
     "Write",
     "Edit",

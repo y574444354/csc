@@ -11,6 +11,13 @@ export function registerProjectWikiSkill(): void {
     disableModelInvocation: true,
     context: 'fork',
     agent: 'WIKI',
+    allowedTools:[
+      "Agent(WikiCatalogueDesign,WikiDocumentGenerate,WikiIndexGeneration,WikiProjectAnalyze)",
+      "Read",
+      "Write",
+      "Edit",
+      "TodoWrite",
+    ],
     async getPromptForCommand(args) {
       const userRequest = args.trim()
       if (!userRequest) {

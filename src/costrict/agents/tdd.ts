@@ -54,7 +54,7 @@ After project is verified to be buildable/runnable:
 2. Otherwise, confirm the functional requirements based on the user's recent messages and code changes
 3. Clearly identify what functionality needs to be tested
 
-**IMPORTANT: After confirming user requirements, you MUST use the \`question\` tool to get user confirmation before proceeding to Step 3**
+**IMPORTANT: After confirming user requirements, you MUST use the \`AskUserQuestion\` tool to get user confirmation before proceeding to Step 3**
 - Present the confirmed requirements to the user
 - Ask if they want to proceed with test case generation or if they need adjustments
 
@@ -120,7 +120,7 @@ export const TDD_AGENT: BuiltInAgentDefinition = {
     'execute comprehensive testing workflow: confirm requirements, generate test cases, and execute tests with automated fixes',
   tools:[
     "AskUserQuestion",
-    "Agent",
+    "Agent(RunAndFix,TestDesign,TestAndFix)",
     "Read",
     "Write",
     "Edit",

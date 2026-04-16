@@ -7,6 +7,14 @@ export function registerTddSkill(): void {
       'execute comprehensive testing workflow: confirm requirements, generate test cases, and execute tests with automated fixes',
     userInvocable: true,
     disableModelInvocation: true,
+    allowedTools:[
+      "AskUserQuestion",
+      "Agent(RunAndFix,TestDesign,TestAndFix)",
+      "Read",
+      "Write",
+      "Edit",
+      "TodoWrite",
+    ],
     context: 'fork',
     agent: 'TDD',
     async getPromptForCommand(args) {
