@@ -294,7 +294,7 @@ action(async (prompt, options) => {
 | `claude setup-token` | 4267 | 设置长期认证 token |
 | `claude agents` | 4278 | 列出已配置的 agents |
 | `claude doctor` | 4346 | 健康检查 |
-| `claude update` | 4362 | 检查更新 |
+| `csc update` | 4362 | 检查更新 |
 | `claude install` | 4394 | 安装原生构建 |
 | `claude log` | 4411 | 查看对话日志（内部） |
 | `claude completion` | 4491 | Shell 自动补全 |

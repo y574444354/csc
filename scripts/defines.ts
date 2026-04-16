@@ -7,12 +7,12 @@
  */
 export function getMacroDefines(): Record<string, string> {
     return {
-        "MACRO.VERSION": JSON.stringify("4.0.4"),
+        "MACRO.VERSION": JSON.stringify("4.0.5.1"),
         "MACRO.BUILD_TIME": JSON.stringify(new Date().toISOString()),
         "MACRO.FEEDBACK_CHANNEL": JSON.stringify(""),
         "MACRO.ISSUES_EXPLAINER": JSON.stringify(""),
         "MACRO.NATIVE_PACKAGE_URL": JSON.stringify(""),
-        "MACRO.PACKAGE_URL": JSON.stringify(""),
+        "MACRO.PACKAGE_URL": JSON.stringify("@costrict/csc"),
         "MACRO.VERSION_CHANGELOG": JSON.stringify(""),
     };
 }

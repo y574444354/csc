@@ -4937,7 +4937,7 @@ async function run(): Promise<CommanderCommand> {
 					if (!isRemoteTuiEnabled && !hasInitialPrompt) {
 						return await exitWithError(
 							root,
-							'Error: --remote requires a description.\nUsage: claude --remote "your task description"',
+							'Error: --remote requires a description.\nUsage: csc --remote "your task description"',
 							() => gracefulShutdown(1),
 						);
 					}
@@ -6479,13 +6479,23 @@ async function run(): Promise<CommanderCommand> {
 				// (e.g. `--debug assistant`) and the position-0 predicate
 				// didn't match. Print usage like the ssh stub does.
 				process.stderr.write(
-					"Usage: claude assistant [sessionId]\n\n" +
+					"Usage: csc assistant [sessionId]\n\n" +
 						"Attach the REPL as a viewer client to a running bridge session.\n" +
 						"Omit sessionId to discover and pick from available sessions.\n",
 				);
 				process.exit(1);
 			});
 	}
+
+  // Update command - check and install updates
+  program
+    .command('update')
+    .alias('upgrade')
+    .description('Check for updates and install the latest version')
+    .action(async () => {
+      const { update } = await import('./cli/update.js')
+      await update()
+    })
 
   // Doctor command - check installation health
   program
