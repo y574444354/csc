@@ -1,4 +1,3 @@
-import { EXIT_PLAN_MODE_TOOL_NAME } from '@claude-code-best/builtin-tools/tools/ExitPlanModeTool/constants.js'
 import type { BuiltInAgentDefinition } from '@claude-code-best/builtin-tools/tools/AgentTool/loadAgentsDir.js'
 
 function getStrictSpecSystemPrompt(): string {
@@ -79,7 +78,6 @@ export const STRICT_SPEC_AGENT: BuiltInAgentDefinition = {
   agentType: 'StrictSpec',
   whenToUse:
     '将用户需求按照标准阶段分配到对应工作流Agent执行。Use this when you need to orchestrate user requirements through the standard workflow stages: requirements clarification → architecture design → task planning → execution. This agent coordinates the Spec workflow with four rigorous stages to ensure high-quality delivery.',
-  disallowedTools: [EXIT_PLAN_MODE_TOOL_NAME],
   tools:[
     "AskUserQuestion",
     "Agent(Requirement,DesignAgent,TaskPlan,SubCoding)",

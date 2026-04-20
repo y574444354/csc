@@ -87,8 +87,7 @@ export async function* queryModelCoStrict(
     // 5. 转换为 OpenAI 格式
     const openaiMessages = anthropicMessagesToOpenAI(
       messagesForAPI,
-      systemPrompt,
-      { enableThinking: true },
+      systemPrompt
     )
     const openaiTools = anthropicToolsToOpenAI(standardTools)
     const openaiToolChoice = anthropicToolChoiceToOpenAI(options.toolChoice)

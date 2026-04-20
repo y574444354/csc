@@ -2,7 +2,7 @@ import { registerBundledSkill } from '../../skills/bundledSkills.js'
 
 export function registerStrictSpecSkill(): void {
   registerBundledSkill({
-    name: 'strict-spec',
+    name: 'strict:spec',
     description:
       '将用户需求按照标准阶段分配到对应工作流Agent执行。Use this when you need to orchestrate user requirements through the standard workflow stages: requirements clarification → architecture design → task planning → execution. This agent coordinates the Spec workflow with four rigorous stages to ensure high-quality delivery.',
     whenToUse:
@@ -11,6 +11,14 @@ export function registerStrictSpecSkill(): void {
     disableModelInvocation: true,
     // 关键：在子 Agent 中运行
     context: 'fork',
+    allowedTools:[
+    "AskUserQuestion",
+    "Agent(Requirement,DesignAgent,TaskPlan,SubCoding)",
+    "Read",
+    "Write",
+    "Edit",
+    "TodoWrite",
+    ],
     // 关键：使用 StrictSpec Agent
     agent: 'StrictSpec',
     async getPromptForCommand(args) {

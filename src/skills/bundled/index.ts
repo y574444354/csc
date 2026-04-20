@@ -35,7 +35,7 @@ export function initBundledSkills(): void {
   registerProjectWikiSkill()
   registerTddSkill()
   registerStrictPlanSkill()
-  // registerStrictSpecSkill()
+  registerStrictSpecSkill()
   registerKeybindingsSkill()
   registerVerifySkill()
   registerDebugSkill()

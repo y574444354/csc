@@ -2,7 +2,7 @@ import { registerBundledSkill } from 'src/skills/bundledSkills.js'
 
 export function registerStrictPlanSkill(): void {
   registerBundledSkill({
-    name: 'strict-plan',
+    name: 'strict:plan',
     description:
       '创建结构化需求提案并协调实施 - 遵循"理解需求→探索项目→需求澄清→创建提案→实施提案"工作流',
     whenToUse:
