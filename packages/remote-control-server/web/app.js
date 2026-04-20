@@ -4,17 +4,119 @@
  */
 import { getUuid, setUuid, apiBind, apiFetchSessions, apiFetchAllSessions, apiFetchEnvironments, apiFetchSession, apiFetchSessionHistory, apiSendEvent, apiSendControl, apiInterrupt, apiCreateSession } from "./api.js";
 import { connectSSE, disconnectSSE } from "./sse.js";
-import { appendEvent, renderPermissionRequest, showLoading, isLoading, resetReplayState, renderReplayPendingRequests } from "./render.js";
+import {
+  appendEvent,
+  getActivityMode,
+  removeLoading,
+  resetReplayState,
+  renderReplayPendingRequests,
+  setAutomationActivity,
+  showLoading,
+} from "./render.js";
 import { initTaskPanel, toggleTaskPanel, resetTaskState } from "./task-panel.js";
-import { esc, formatTime, statusClass } from "./utils.js";
+import {
+  createAutomationState,
+  getAutomationActivity,
+  getAutomationIndicator,
+  reduceAutomationState,
+  renderAutomationIcon,
+  shouldPulseAutomationIndicator,
+} from "./automation.js";
+import { esc, formatTime, statusClass, isClosedSessionStatus } from "./utils.js";
 
 // ============================================================
 // State
 // ============================================================
 
 let currentSessionId = null;
+let currentSessionStatus = null;
 let dashboardInterval = null;
 let cachedEnvs = [];
+let automationState = createAutomationState();
+let automationPulseTimer = null;
+
+function generateMessageUuid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `msg_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function renderAutomationIndicator() {
+  const indicatorEl = document.getElementById("session-automation");
+  if (!indicatorEl) return;
+
+  const indicator = getAutomationIndicator(automationState);
+  if (!indicator.visible) {
+    indicatorEl.className = "automation-pill hidden";
+    indicatorEl.dataset.pulsing = "false";
+    indicatorEl.innerHTML = "";
+    indicatorEl.removeAttribute("title");
+    return;
+  }
+
+  indicatorEl.className = `automation-pill automation-pill-${indicator.tone}`;
+  if (indicatorEl.dataset.pulsing === "true") {
+    indicatorEl.classList.add("is-pulsing");
+  }
+  indicatorEl.innerHTML = `
+    ${renderAutomationIcon(indicator.iconVariant, { className: "automation-pill-icon" })}
+    <span class="automation-pill-label">${esc(indicator.label)}</span>
+  `;
+  indicatorEl.title = indicator.title;
+}
+
+function syncAutomationUI() {
+  renderAutomationIndicator();
+  setAutomationActivity(getAutomationActivity(automationState));
+}
+
+function stopAutomationPulse() {
+  if (automationPulseTimer) {
+    clearTimeout(automationPulseTimer);
+    automationPulseTimer = null;
+  }
+  const indicatorEl = document.getElementById("session-automation");
+  if (indicatorEl) {
+    indicatorEl.dataset.pulsing = "false";
+    indicatorEl.classList.remove("is-pulsing");
+  }
+}
+
+function pulseAutomationIndicator() {
+  if (!getAutomationIndicator(automationState).visible) return;
+
+  stopAutomationPulse();
+  const indicatorEl = document.getElementById("session-automation");
+  if (!indicatorEl) return;
+
+  indicatorEl.dataset.pulsing = "true";
+  indicatorEl.classList.add("is-pulsing");
+  automationPulseTimer = setTimeout(() => {
+    indicatorEl.dataset.pulsing = "false";
+    indicatorEl.classList.remove("is-pulsing");
+    automationPulseTimer = null;
+  }, 1200);
+}
+
+function resetAutomationIndicator() {
+  automationState = createAutomationState();
+  stopAutomationPulse();
+  syncAutomationUI();
+}
+
+function applyAutomationEvent(event, { replay = false } = {}) {
+  automationState = reduceAutomationState(automationState, event);
+  syncAutomationUI();
+  if (!replay && shouldPulseAutomationIndicator(event)) {
+    pulseAutomationIndicator();
+  }
+}
+
+function applyAutomationSnapshot(snapshot) {
+  if (snapshot === undefined) return;
+  applyAutomationEvent({ type: "automation_state", payload: snapshot }, { replay: true });
+}
 
 // ============================================================
 // Router
@@ -42,6 +144,72 @@ function navigate(path) {
   handleRoute();
 }
 window.navigate = navigate;
+
+function applySessionStatus(status) {
+  currentSessionStatus = status || null;
+
+  const badge = document.getElementById("session-status");
+  if (badge) {
+    badge.textContent = status || "";
+    badge.className = `status-badge status-${statusClass(status)}`;
+  }
+
+  const closed = isClosedSessionStatus(status);
+  const input = document.getElementById("msg-input");
+  if (input) {
+    input.disabled = closed;
+    input.placeholder = closed ? "Session is closed" : "Type a message...";
+  }
+
+  const actionBtn = document.getElementById("action-btn");
+  if (actionBtn) {
+    actionBtn.disabled = closed;
+    actionBtn.title = closed ? "Session is closed" : "";
+  }
+
+  if (closed) {
+    removeLoading();
+    window.__updateActionBtn?.("idle");
+  }
+}
+
+function handleSessionEvent(event) {
+  if (event?.type === "session_status" && typeof event.payload?.status === "string") {
+    applySessionStatus(event.payload.status);
+    if (isClosedSessionStatus(event.payload.status)) {
+      disconnectSSE();
+    }
+  }
+  applyAutomationEvent(event);
+  appendEvent(event);
+}
+
+async function syncClosedSessionState(err, actionLabel) {
+  if (!(err instanceof Error)) {
+    alert(`${actionLabel}: unknown error`);
+    return;
+  }
+
+  if (!currentSessionId || !/session is /i.test(err.message)) {
+    alert(`${actionLabel}: ${err.message}`);
+    return;
+  }
+
+  try {
+    const session = await apiFetchSession(currentSessionId);
+    applySessionStatus(session.status);
+    if (isClosedSessionStatus(session.status)) {
+      const closedEvent = { type: "session_status", payload: { status: session.status } };
+      applyAutomationEvent(closedEvent);
+      appendEvent(closedEvent);
+      return;
+    }
+  } catch {
+    // Fall back to the original error if the refresh also fails.
+  }
+
+  alert(`${actionLabel}: ${err.message}`);
+}
 
 async function handleRoute() {
   // Ensure we have a UUID
@@ -86,6 +254,9 @@ async function handleRoute() {
   }
 
   // Default: /code → dashboard
+  currentSessionId = null;
+  currentSessionStatus = null;
+  resetAutomationIndicator();
   showPage("dashboard");
   disconnectSSE();
   renderDashboard();
@@ -160,6 +331,8 @@ function stopDashboardRefresh() {
 
 async function renderSessionDetail(id) {
   currentSessionId = id;
+  resetAutomationIndicator();
+  let session = null;
 
   // Reset task state for new session and init panel
   resetTaskState();
@@ -167,14 +340,12 @@ async function renderSessionDetail(id) {
   if (taskPanelEl) initTaskPanel(taskPanelEl);
 
   try {
-    const session = await apiFetchSession(id);
+    session = await apiFetchSession(id);
     document.getElementById("session-title").textContent = session.title || session.id;
     document.getElementById("session-id").textContent = session.id;
     document.getElementById("session-env").textContent = session.environment_id || "";
     document.getElementById("session-time").textContent = formatTime(session.created_at);
-    const badge = document.getElementById("session-status");
-    badge.textContent = session.status;
-    badge.className = `status-badge status-${statusClass(session.status)}`;
+    applySessionStatus(session.status);
   } catch (err) {
     alert("Failed to load session: " + err.message);
     navigate("/code/");
@@ -183,6 +354,7 @@ async function renderSessionDetail(id) {
   document.getElementById("event-stream").innerHTML = "";
   document.getElementById("permission-area").innerHTML = "";
   document.getElementById("permission-area").classList.add("hidden");
+  applyAutomationSnapshot(session?.automation_state);
 
   // Load historical events before connecting to live stream
   resetReplayState();
@@ -191,6 +363,7 @@ async function renderSessionDetail(id) {
     const { events } = await apiFetchSessionHistory(id);
     if (events && events.length > 0) {
       for (const event of events) {
+        applyAutomationEvent(event, { replay: true });
         appendEvent(event, { replay: true });
         if (event.seqNum && event.seqNum > lastSeqNum) lastSeqNum = event.seqNum;
       }
@@ -201,7 +374,15 @@ async function renderSessionDetail(id) {
   // Re-render any still-unresolved permission prompts from history
   renderReplayPendingRequests();
 
-  connectSSE(id, appendEvent, lastSeqNum);
+  if (isClosedSessionStatus(currentSessionStatus)) {
+    const closedEvent = { type: "session_status", payload: { status: currentSessionStatus } };
+    applyAutomationEvent(closedEvent);
+    appendEvent(closedEvent);
+    disconnectSSE();
+    return;
+  }
+
+  connectSSE(id, handleSessionEvent, lastSeqNum);
 }
 
 // ============================================================
@@ -214,17 +395,20 @@ function setupControlBar() {
   const iconSend = document.getElementById("action-icon-send");
   const iconStop = document.getElementById("action-icon-stop");
 
-  function setBtnState(loading) {
-    actionBtn.classList.toggle("loading", loading);
-    actionBtn.setAttribute("aria-label", loading ? "Stop" : "Send");
-    iconSend.classList.toggle("hidden", loading);
-    iconStop.classList.toggle("hidden", !loading);
+  function setBtnState(mode) {
+    const working = mode === "working";
+    actionBtn.classList.toggle("loading", working);
+    actionBtn.dataset.mode = mode || "idle";
+    actionBtn.setAttribute("aria-label", working ? "Stop" : "Send");
+    iconSend.classList.toggle("hidden", working);
+    iconStop.classList.toggle("hidden", !working);
   }
 
   window.__updateActionBtn = setBtnState;
+  setBtnState(getActivityMode());
 
   actionBtn.addEventListener("click", () => {
-    if (isLoading()) {
+    if (getActivityMode() === "working") {
       doInterrupt();
     } else {
       sendMessage();
@@ -237,28 +421,34 @@ function setupControlBar() {
 }
 
 async function doInterrupt() {
-  if (!currentSessionId) return;
+  if (!currentSessionId || isClosedSessionStatus(currentSessionStatus)) return;
   const btn = document.getElementById("action-btn");
   btn.disabled = true;
   try {
     await apiInterrupt(currentSessionId);
-    appendEvent({ type: "interrupt", payload: { message: "Session interrupted" } });
   } catch (err) {
-    alert("Interrupt failed: " + err.message);
+    await syncClosedSessionState(err, "Interrupt failed");
   } finally {
-    btn.disabled = false;
+    btn.disabled = isClosedSessionStatus(currentSessionStatus);
   }
 }
 
 async function sendMessage() {
   const input = document.getElementById("msg-input");
   const text = input.value.trim();
-  if (!text || !currentSessionId) return;
+  if (!text || !currentSessionId || isClosedSessionStatus(currentSessionStatus)) return;
   input.value = "";
+  const uuid = generateMessageUuid();
   try {
-    await apiSendEvent(currentSessionId, { type: "user", content: text });
+    await apiSendEvent(currentSessionId, {
+      type: "user",
+      uuid,
+      content: text,
+      message: { content: text },
+    });
   } catch (err) {
-    alert("Failed to send: " + err.message);
+    input.value = text;
+    await syncClosedSessionState(err, "Failed to send");
   }
 }
 
@@ -376,9 +566,26 @@ window._submitAnswers = async function (requestId, btn) {
 
 function removePermissionPrompt(btn) {
   const prompt = btn.closest(".permission-prompt, .ask-panel, .plan-panel");
+  const requestId = prompt?.dataset?.requestId || null;
   if (prompt) prompt.remove();
+  if (requestId) {
+    const stream = document.getElementById("event-stream");
+    stream?.querySelectorAll("[data-pending-request-id]").forEach((row) => {
+      if (row.dataset.pendingRequestId === requestId) row.remove();
+    });
+  }
   const area = document.getElementById("permission-area");
   if (area && area.children.length === 0) area.classList.add("hidden");
+}
+
+function appendLocalSystemMessage(text) {
+  const stream = document.getElementById("event-stream");
+  if (!stream) return;
+  const row = document.createElement("div");
+  row.className = "msg-row system";
+  row.innerHTML = `<div class="msg-bubble">${esc(text)}</div>`;
+  stream.appendChild(row);
+  stream.scrollTop = stream.scrollHeight;
 }
 
 // ============================================================
@@ -425,6 +632,7 @@ window._submitPlanResponse = async function (requestId, btn) {
         ...(feedback ? { message: feedback } : {}),
       });
       removePermissionPrompt(btn);
+      appendLocalSystemMessage("Feedback sent. Continuing in plan mode.");
     } else {
       // Approval with permission mode
       const modeMap = {

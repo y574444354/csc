@@ -1802,9 +1802,11 @@ async function run(): Promise<CommanderCommand> {
 			}
 			if (
 				feature("KAIROS") &&
-				assistantModule?.isAssistantMode() &&
+				assistantModule &&
+				(assistantModule.isAssistantForced() ||
+					(options as Record<string, unknown>).assistant === true) &&
 				// Spawned teammates share the leader's cwd + settings.json, so
-				// isAssistantMode() is true for them too. --agent-id being set
+				// the flag is true for them too. --agent-id being set
 				// means we ARE a spawned teammate (extractTeammateOptions runs
 				// ~170 lines later so check the raw commander option) — don't
 				// re-init the team or override teammateMode/proactive/brief.
@@ -6092,14 +6094,14 @@ async function run(): Promise<CommanderCommand> {
 		.description("Sign in to your CoStrict account")
 		.option(
 			"--email <email>",
-			"Pre-populate email address on the login page",
+			"Pre-populate email address on the login page (Anthropic OAuth only)",
 		)
-		.option("--sso", "Force SSO login flow")
+		.option("--sso", "Force SSO login flow (Anthropic OAuth only)")
 		.option(
 			"--console",
-			"Use Anthropic Console (API usage billing) instead of Claude subscription",
+			"Use Anthropic Console (API usage billing) instead of CoStrict",
 		)
-		.option("--claudeai", "Use Claude subscription (default)")
+		.option("--claudeai", "Use Claude subscription instead of CoStrict")
 		.action(
 			async ({
 				email,

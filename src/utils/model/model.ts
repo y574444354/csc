@@ -76,9 +76,18 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
     specifiedModel = modelOverride
   } else {
     const settings = getSettings_DEPRECATED() || {}
+    const provider = getAPIProvider()
     // Settings.model takes precedence over ANTHROPIC_MODEL env var
     // This ensures user's explicit model selection via /login is respected
-    specifiedModel = settings.model || process.env.ANTHROPIC_MODEL || undefined
+    specifiedModel =
+      settings.model ||
+      (provider === 'firstParty' ||
+      provider === 'bedrock' ||
+      provider === 'vertex' ||
+      provider === 'foundry'
+        ? process.env.ANTHROPIC_MODEL
+        : undefined) ||
+      undefined
   }
 
   // Ignore the user-specified model if it's not in the availableModels allowlist.

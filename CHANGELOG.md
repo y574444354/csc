@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.8] - 2026-04-17
+
+### 新功能
+
+- 同步上游主仓库最新代码
+- 远程控制 Web 展示优化、状态同步与桥接控制流程改进
+- 添加对 ACP 协议的支持
+- 重构供应商层次结构
+- 新增 Vite 构建流程
+- 添加环境变量支持以覆盖 max_tokens 设置
+- Langfuse LLM generation 记录工具定义
+
+### 修复
+
+- 修复 node 下 loading 按钮计算错误问题
+- 修复 Linux 端的安装问题
+- 修复类型校验问题
+
+## [4.0.6] - 2026-04-16
+
+### 新功能
+
+- 去除了运行时bun的依赖
+
 ## [4.0.5] - 2026-04-15
 
 ### 新功能

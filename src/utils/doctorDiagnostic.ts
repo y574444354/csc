@@ -113,17 +113,25 @@ export async function getCurrentInstallationType(): Promise<InstallationType> {
     return 'npm-local'
   }
 
-  // Check if we're in a typical npm global location
+  // Check if we're in a typical npm global location (Unix + Windows)
   const npmGlobalPaths = [
     '/usr/local/lib/node_modules',
     '/usr/lib/node_modules',
     '/opt/homebrew/lib/node_modules',
     '/opt/homebrew/bin',
     '/usr/local/bin',
-    '/.nvm/versions/node/', // nvm installations
+    '/.nvm/versions/node/', // nvm installations (Unix)
+    '\\nvm', // nvm4w installations (Windows, e.g. C:\nvm4w\nodejs)
   ]
 
-  if (npmGlobalPaths.some(path => invokedPath.includes(path))) {
+  // Normalize path separators for cross-platform matching
+  const normalizedPath = invokedPath.replace(/\\/g, '/')
+  if (
+    npmGlobalPaths.some(path => invokedPath.includes(path)) ||
+    normalizedPath.includes('/nvm') ||
+    normalizedPath.includes('/nodejs/') ||
+    normalizedPath.includes('/.nvm/')
+  ) {
     return 'npm-global'
   }
 

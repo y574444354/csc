@@ -1,43 +1,38 @@
 {
-  "name": "@costrict/csc",
-  "version": "4.0.5-3",
-
-  "description": "CSC — 多模型终端 AI 编程助手，支持 Anthropic/OpenAI/Gemini/Grok 等多种 API 端点",
+  "name": "claude-code-best",
+  "version": "4.0.8",
+  "description": "Reverse-engineered Anthropic Claude Code CLI — interactive AI coding assistant in the terminal",
   "type": "module",
   "author": "claude-code-best <claude-code-best@proton.me>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/y574444354/csc.git"
+    "url": "git+https://github.com/claude-code-best/claude-code.git"
   },
-  "homepage": "https://github.com/y574444354/csc#readme",
+  "homepage": "https://github.com/claude-code-best/claude-code#readme",
   "bugs": {
-    "url": "https://github.com/y574444354/csc/issues"
+    "url": "https://github.com/claude-code-best/claude-code/issues"
   },
   "keywords": [
-    "csc",
-    "costrict",
+    "claude",
+    "anthropic",
     "cli",
     "ai",
     "coding-assistant",
     "terminal",
-    "repl",
-    "multi-model",
-    "anthropic",
-    "openai",
-    "gemini",
-    "grok"
+    "repl"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "bun": ">=1.2.0"
   },
   "bin": {
-    "csc": "dist/cli-node.js",
-    "csc-bun": "dist/cli-bun.js",
+    "ccb": "dist/cli-node.js",
+    "ccb-bun": "dist/cli-bun.js",
     "claude-code-best": "dist/cli-node.js"
   },
   "workspaces": [
     "packages/*",
-    "packages/@ant/*"
+    "packages/@ant/*",
+    "packages/@anthropic-ai/*"
   ],
   "files": [
     "dist",
@@ -45,8 +40,10 @@
     "scripts/setup-chrome-mcp.mjs"
   ],
   "scripts": {
-    "prebuild": "bun run scripts/generate-skills.ts",
     "build": "bun run build.ts",
+    "build:vite": "vite build && bun run scripts/post-build.ts",
+    "build:vite:only": "vite build",
+    "build:bun": "bun run build.ts",
     "dev": "bun run scripts/dev.ts",
     "dev:inspect": "bun run scripts/dev-debug.ts",
     "prepublishOnly": "bun run build",
@@ -57,19 +54,19 @@
     "test": "bun test",
     "check:unused": "knip-bun",
     "health": "bun run scripts/health-check.ts",
-    "postinstall": "node scripts/postinstall.cjs && node scripts/setup-chrome-mcp.mjs",
+    "postinstall": "node scripts/run-parallel.mjs scripts/postinstall.cjs scripts/setup-chrome-mcp.mjs",
     "docs:dev": "npx mintlify dev",
-    "generate:skills": "bun run scripts/generate-skills.ts",
     "typecheck": "tsc --noEmit",
     "rcs": "bun run scripts/rcs.ts"
   },
   "dependencies": {
-    "@claude-code-best/mcp-chrome-bridge": "^2.0.7",
-    "ws": "^8.20.0",
-    "yaml": "^2.8.3"
+    "@agentclientprotocol/sdk": "^0.19.0",
+    "@claude-code-best/mcp-chrome-bridge": "^2.0.8",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@alcalzone/ansi-tokenize": "^0.3.0",
+    "@ant/model-provider": "workspace:*",
     "@ant/claude-for-chrome-mcp": "workspace:*",
     "@ant/computer-use-input": "workspace:*",
     "@ant/computer-use-mcp": "workspace:*",
@@ -178,6 +175,7 @@
     "react": "^19.2.4",
     "react-compiler-runtime": "^1.0.0",
     "react-reconciler": "^0.33.0",
+    "rollup": "^4.60.1",
     "semver": "^7.7.4",
     "sharp": "^0.34.5",
     "shell-quote": "^1.8.3",
@@ -192,11 +190,13 @@
     "undici": "^7.24.6",
     "url-handler-napi": "workspace:*",
     "usehooks-ts": "^3.1.1",
+    "vite": "^8.0.8",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
     "vscode-languageserver-types": "^3.17.5",
     "wrap-ansi": "^10.0.0",
     "xss": "^1.0.15",
+    "yaml": "^2.8.3",
     "zod": "^4.3.6"
   }
 }

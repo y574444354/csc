@@ -8,7 +8,7 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../../services/analytics/index.js'
-import { getSSLErrorHint } from '../../services/api/errorUtils.js'
+import { getSSLErrorHint } from '@ant/model-provider'
 import { fetchAndStoreClaudeCodeFirstTokenDate } from '../../services/api/firstTokenDate.js'
 import {
   createAndStoreApiKey,
@@ -30,6 +30,7 @@ import {
   saveOAuthTokensIfNeeded,
   validateForceLoginOrg,
 } from '../../utils/auth.js'
+import { openBrowser } from '../../utils/browser.js'
 import { saveGlobalConfig } from '../../utils/config.js'
 import { logForDebugging } from '../../utils/debug.js'
 import { isRunningOnHomespace } from '../../utils/envUtils.js'
@@ -37,11 +38,23 @@ import { errorMessage } from '../../utils/errors.js'
 import { logError } from '../../utils/log.js'
 import { getAPIProvider } from '../../utils/model/providers.js'
 import { getInitialSettings } from '../../utils/settings/settings.js'
+import { updateSettingsForSource } from '../../utils/settings/settings.js'
 import { jsonStringify } from '../../utils/slowOperations.js'
 import {
   buildAccountProperties,
   buildAPIProviderProperties,
 } from '../../utils/status.js'
+import {
+  buildCoStrictLoginURL,
+  generateState,
+  getCoStrictBaseURL,
+  pollLoginToken,
+} from '../../costrict/provider/auth.js'
+import {
+  generateMachineId,
+  saveCoStrictCredentials,
+} from '../../costrict/provider/credentials.js'
+import { extractExpiryFromJWT } from '../../costrict/provider/token.js'
 
 /**
  * Shared post-token-acquisition logic. Saves tokens, fetches profile/roles,
@@ -109,6 +122,57 @@ export async function installOAuthTokens(tokens: OAuthTokens): Promise<void> {
   await clearAuthRelatedCaches()
 }
 
+/**
+ * CoStrict OAuth login flow for CLI.
+ * Opens CoStrict login URL in browser and polls for tokens.
+ */
+async function coStrictLogin(): Promise<void> {
+  const baseUrl = getCoStrictBaseURL()
+  const state = generateState()
+  const machineId = generateMachineId()
+  const loginUrl = buildCoStrictLoginURL(baseUrl, state, machineId)
+
+  process.stdout.write('Opening browser to sign in…\n')
+  process.stdout.write(`If the browser didn't open, visit: ${loginUrl}\n`)
+
+  await openBrowser(loginUrl)
+
+  try {
+    const tokens = await pollLoginToken(baseUrl, state, machineId)
+
+    const expiryDate = extractExpiryFromJWT(tokens.access_token)
+    await saveCoStrictCredentials({
+      id: 'csc',
+      name: 'CSC Auth',
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      state,
+      machine_id: machineId,
+      base_url: baseUrl,
+      expiry_date: expiryDate,
+      updated_at: new Date().toISOString(),
+      expired_at: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+    })
+
+    // Set modelType to costrict
+    updateSettingsForSource('userSettings', { modelType: 'costrict' as never } as never)
+    process.env.CLAUDE_CODE_USE_COSTRICT = '1'
+
+    // Mark onboarding complete
+    saveGlobalConfig(current => {
+      if (current.hasCompletedOnboarding) return current
+      return { ...current, hasCompletedOnboarding: true }
+    })
+
+    process.stdout.write('Login successful.\n')
+    process.exit(0)
+  } catch (err) {
+    logError(err)
+    process.stderr.write(`Login failed: ${errorMessage(err)}\n`)
+    process.exit(1)
+  }
+}
+
 export async function authLogin({
   email,
   sso,
@@ -120,6 +184,12 @@ export async function authLogin({
   console?: boolean
   claudeai?: boolean
 }): Promise<void> {
+  // Default to CoStrict login; use --claudeai or --console for Anthropic OAuth
+  if (!claudeai && !useConsole) {
+    await coStrictLogin()
+    return
+  }
+
   if (useConsole && claudeai) {
     process.stderr.write(
       'Error: --console and --claudeai cannot be used together.\n',
@@ -129,7 +199,7 @@ export async function authLogin({
 
   const settings = getInitialSettings()
   // forceLoginMethod is a hard constraint (enterprise setting) — matches ConsoleOAuthFlow behavior.
-  // Without it, --console selects Console; --claudeai (or no flag) selects claude.ai.
+  // Without it, --console selects Console; --claudeai selects claude.ai.
   const loginWithClaudeAi = settings.forceLoginMethod
     ? settings.forceLoginMethod === 'claudeai'
     : !useConsole
