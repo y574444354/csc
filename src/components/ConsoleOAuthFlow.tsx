@@ -283,6 +283,8 @@ export function ConsoleOAuthFlow({
         }
         // Reset modelType to anthropic when using OAuth login
         updateSettingsForSource('userSettings', { modelType: 'anthropic' } as any)
+        // Clear costrict env var to prevent conflicts
+        delete process.env.CLAUDE_CODE_USE_COSTRICT
 
         setOAuthStatus({ state: 'success' })
         void sendNotification(
@@ -725,6 +727,8 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            // Clear costrict env var to prevent conflicts when using custom platform
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
@@ -945,6 +949,8 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            // Clear costrict env var to prevent conflicts when using OpenAI
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
@@ -1178,6 +1184,8 @@ function OAuthStatusMessage({
             })
           } else {
             for (const [k, v] of Object.entries(env)) process.env[k] = v
+            // Clear costrict env var to prevent conflicts when using Gemini
+            delete process.env.CLAUDE_CODE_USE_COSTRICT
             setOAuthStatus({ state: 'success' })
             void onDone()
           }

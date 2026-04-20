@@ -33,7 +33,6 @@ import {
 } from './model.js'
 import { has1mContext } from '../context.js'
 import { getGlobalConfig } from '../config.js'
-import { hasCoStrictCredentialsSync } from '../../costrict/provider/credentials.js'
 
 // @[MODEL LAUNCH]: Update all the available and default model option strings below.
 
@@ -380,10 +379,8 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
   }
 
   // CoStrict provider: 从缓存中动态展示 CoStrict 可用模型
-  // 也覆盖其他 provider 但用户已有 CoStrict 凭证的场景（modelType 丢失/竞态）
   const isCoStrictProvider = getAPIProvider() === 'costrict'
-  const hasCoStrictCreds = hasCoStrictCredentialsSync()
-  if (isCoStrictProvider || hasCoStrictCreds) {
+  if (isCoStrictProvider) {
     // 延迟 require 避免循环依赖，且该模块只在 costrict provider 下加载
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCachedCoStrictModels } =
@@ -414,21 +411,27 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
     ]
   }
 
-  // 用户没有 CoStrict 凭证，显示推荐登录选项
-  return [getCoStrictLoginOption()]
-}
-
-/**
- * CoStrict 登录推荐选项
- * 当用户未登录 CoStrict 时显示，提示用户可以登录以使用 CoStrict 模型
- */
-function getCoStrictLoginOption(): ModelOption {
-  return {
-    value: 'costrict-login',
-    label: 'CoStrict (Recommended)',
-    description:
-      'Sign in to CoStrict for more models and better pricing · Run /login and select CoStrict',
+  // PAYG 用户：展示标准模型选项（Sonnet, Opus, Haiku 等）
+  const paygOptions = [getDefaultOptionForUser(fastMode)]
+  const customSonnet = getCustomSonnetOption()
+  if (customSonnet) {
+    paygOptions.push(customSonnet)
+  } else {
+    paygOptions.push(getSonnet46Option())
   }
+  const customOpus = getCustomOpusOption()
+  if (customOpus) {
+    paygOptions.push(customOpus)
+  } else {
+    paygOptions.push(getOpus46Option(fastMode))
+  }
+  const customHaiku = getCustomHaikuOption()
+  if (customHaiku) {
+    paygOptions.push(customHaiku)
+  } else {
+    paygOptions.push(getHaikuOption())
+  }
+  return paygOptions
 }
 
 // @[MODEL LAUNCH]: Add the new model ID to the appropriate family pattern below
@@ -549,11 +552,6 @@ export function getModelOptions(fastMode = false): ModelOption[] {
   } else if (initialMainLoopModel !== null) {
     customModel = initialMainLoopModel
   }
-  // 忽略 costrict-login 伪模型值（用户点击了推荐登录选项但未完成登录）
-  if (customModel === 'costrict-login') {
-    return filterModelOptionsByAllowlist(options)
-  }
-
   if (customModel === null || options.some(opt => opt.value === customModel)) {
     return filterModelOptionsByAllowlist(options)
   } else if (customModel === 'opusplan') {
