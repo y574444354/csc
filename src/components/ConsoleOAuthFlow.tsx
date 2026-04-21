@@ -288,6 +288,8 @@ export function ConsoleOAuthFlow({
         updateSettingsForSource('userSettings', { model: getDefaultSonnetModel() } as any)
         // Clear costrict env var to prevent conflicts
         delete process.env.CLAUDE_CODE_USE_COSTRICT
+        // Reset AppState model so logo reflects the new provider default
+        setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
 
         setOAuthStatus({ state: 'success' })
         void sendNotification(
@@ -734,6 +736,8 @@ function OAuthStatusMessage({
             delete process.env.CLAUDE_CODE_USE_COSTRICT
             // Set default model to sonnet for this provider
             updateSettingsForSource('userSettings', { model: getDefaultSonnetModel() } as any)
+            // Reset AppState model so logo reflects the new provider default
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
@@ -958,6 +962,8 @@ function OAuthStatusMessage({
             delete process.env.CLAUDE_CODE_USE_COSTRICT
             // Set default model to sonnet for this provider
             updateSettingsForSource('userSettings', { model: getDefaultSonnetModel() } as any)
+            // Reset AppState model so logo reflects the new provider default
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }
@@ -1195,6 +1201,8 @@ function OAuthStatusMessage({
             delete process.env.CLAUDE_CODE_USE_COSTRICT
             // Set default model to sonnet for this provider
             updateSettingsForSource('userSettings', { model: getDefaultSonnetModel() } as any)
+            // Reset AppState model so logo reflects the new provider default
+            setAppState(prev => ({ ...prev, mainLoopModel: null, mainLoopModelForSession: null }))
             setOAuthStatus({ state: 'success' })
             void onDone()
           }

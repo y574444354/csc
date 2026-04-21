@@ -37,6 +37,7 @@ import { generateMachineId, saveCoStrictCredentials } from '../../costrict/provi
 import { extractExpiryFromJWT } from '../../costrict/provider/token.js';
 import { updateSettingsForSource } from '../../utils/settings/settings.js';
 import { useSetAppState as useSetGlobalAppState } from '../../state/AppState.js';
+import { isNotLoggedIn } from '../../utils/logoV2Utils.js';
 
 function ModelPickerWrapper({
   onDone,
@@ -337,6 +338,15 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       args: args as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
     return <SetModelAndClose args={args} onDone={onDone} />;
+  }
+
+  // Check if user is logged in before showing model picker
+  if (isNotLoggedIn()) {
+    // User is not logged in, redirect to login
+    onDone('You need to login first. Use /login to authenticate.', {
+      display: 'system',
+    });
+    return;
   }
 
   return <ModelPickerWrapper onDone={onDone} />;
