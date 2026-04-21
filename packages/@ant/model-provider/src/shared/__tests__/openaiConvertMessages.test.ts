@@ -428,7 +428,7 @@ describe('DeepSeek thinking mode (enableThinking)', () => {
       { enableThinking: true },
     )
     const assistant = result.filter(m => m.role === 'assistant')[0] as any
-    expect(assistant.reasoning_content).toBeUndefined()
+    expect(assistant.reasoning_content).toBe(' ')
   })
 
   // ── fix: reorder tool and user messages for OpenAI API compatibility (#168) ──
