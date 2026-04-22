@@ -211,21 +211,29 @@ function convertInternalAssistantMessage(
   const content = msg.message.content
 
   if (typeof content === 'string') {
-    return [
-      {
-        role: 'assistant',
-        content,
-      } satisfies ChatCompletionAssistantMessageParam,
-    ]
+    const result: ChatCompletionAssistantMessageParam & { reasoning_content?: string } = {
+      role: 'assistant',
+      content,
+    }
+    // 如果开启了thinking模式，必须提供reasoning_content字段
+    if (preserveReasoning) {
+      // content是字符串，没有reasoning内容，设置为空字符串
+      result.reasoning_content = ' '
+    }
+    return [result]
   }
 
   if (!Array.isArray(content)) {
-    return [
-      {
-        role: 'assistant',
-        content: '',
-      } satisfies ChatCompletionAssistantMessageParam,
-    ]
+    const result: ChatCompletionAssistantMessageParam & { reasoning_content?: string } = {
+      role: 'assistant',
+      content: '',
+    }
+    // 如果开启了thinking模式，必须提供reasoning_content字段
+    if (preserveReasoning) {
+      // content不是数组，没有reasoning内容，设置为空字符串
+      result.reasoning_content = ' '
+    }
+    return [result]
   }
 
   const textParts: string[] = []
@@ -258,11 +266,16 @@ function convertInternalAssistantMessage(
     // Skip redacted_thinking, server_tool_use, etc.
   }
 
-  const result: ChatCompletionAssistantMessageParam = {
+  const result: ChatCompletionAssistantMessageParam & { reasoning_content?: string } = {
     role: 'assistant',
     content: textParts.length > 0 ? textParts.join('\n') : null,
     ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
-    ...(reasoningParts.length > 0 && { reasoning_content: reasoningParts.join('\n') }),
+  }
+
+  // 如果开启了thinking模式，必须提供reasoning_content字段
+  if (preserveReasoning) {
+    // 如果有reasoning内容就用这些内容，没有才设置成空字符串
+    result.reasoning_content = reasoningParts.length > 0 ? reasoningParts.join('\n') : ' '
   }
 
   return [result]

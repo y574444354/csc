@@ -31,6 +31,7 @@ import { createCoStrictFetch } from './fetch.js'
 import { resolveCoStrictModel } from './modelMapping.js'
 import { getCoStrictBaseURL } from './auth.js'
 import { loadCoStrictCredentials } from './credentials.js'
+import { isOpenAIThinkingEnabled } from '../../services/api/openai/requestBody.js'
 
 /**
  * CoStrict 查询路径
@@ -80,9 +81,12 @@ export async function* queryModelCoStrict(
     )
 
     // 5. 转换为 OpenAI 格式
+    // 根据模型名称自动检测是否启用thinking模式
+    const enableThinking = isOpenAIThinkingEnabled(costrictModel)
     const openaiMessages = anthropicMessagesToOpenAI(
       messagesForAPI,
-      systemPrompt
+      systemPrompt,
+      { enableThinking }
     )
     const openaiTools = anthropicToolsToOpenAI(standardTools)
     const openaiToolChoice = anthropicToolChoiceToOpenAI(options.toolChoice)
