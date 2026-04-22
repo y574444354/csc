@@ -135,7 +135,7 @@ export function UltraplanChoiceDialog({
           if (transcriptSaved) {
             setMessages(prev => [
               ...prev,
-              createSystemMessage(`Previous session saved · resume with: claude --resume ${previousSessionId}`, 'suggestion'),
+              createSystemMessage(`Previous session saved · resume with: csc --resume ${previousSessionId}`, 'suggestion'),
             ]);
           }
 
