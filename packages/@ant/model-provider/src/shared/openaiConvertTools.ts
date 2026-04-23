@@ -48,6 +48,15 @@ function sanitizeJsonSchema(schema: Record<string, unknown>): Record<string, unk
 
   const result = { ...schema }
 
+  // Normalize `required` — Qwen (and other strict validators) reject both
+  // `required: null` and missing `required` on object schemas. Coerce
+  // null/non-array to an empty array, and inject an empty array when absent.
+  if ('required' in result && !Array.isArray(result.required)) {
+    result.required = []
+  } else if (!('required' in result) && result.type === 'object') {
+    result.required = []
+  }
+
   // Convert `const` → `enum: [value]`
   if ('const' in result) {
     result.enum = [result.const]
