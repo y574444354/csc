@@ -1,6 +1,6 @@
 {
   "name": "@costrict/csc",
-  "version": "4.0.9",
+  "version": "4.0.10",
   "description": "costrict",
   "type": "module",
   "author": "claude-code-best <claude-code-best@proton.me>",
@@ -37,6 +37,7 @@
   "files": [
     "dist",
     "scripts/postinstall.cjs",
+    "scripts/run-parallel.mjs",
     "scripts/setup-chrome-mcp.mjs"
   ],
   "scripts": {

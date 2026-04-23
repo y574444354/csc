@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.10] - 2026-04-23
+
+### 修复
+
+- **Package**: `files` 字段补充遗漏的 `scripts/run-parallel.mjs`，修复 npm install 时 `MODULE_NOT_FOUND` 错误
+
 ## [4.0.9] - 2026-04-23
 
 ### 变更
