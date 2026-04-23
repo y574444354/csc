@@ -2,28 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [4.0.11] - 2026-04-23
-
-### 变更
-
-- **Bin**: bin 命令统一为 `csc`，移除 `ccb`、`ccb-bun`、`claude-code-best`
-
-## [4.0.10] - 2026-04-23
-
-### 修复
-
-- **Package**: `files` 字段补充遗漏的 `scripts/run-parallel.mjs`，修复 npm install 时 `MODULE_NOT_FOUND` 错误
-
-## [4.0.9] - 2026-04-23
-
-### 变更
-
-- **Commands**: 移除 `desktop` 命令及相关注册
-- **UI**: `LogoV2` 强制使用 condensed 模式，跳过 release notes / onboarding 检测
-- **Tips**: 将 desktop app 提示文案更新为 CoStrict Web
-- **Package**: 包名改为 `@costrict/csc`，描述更新为 `costrict`
-
-## [4.0.8] - 2026-04-17
+## [4.0.8] - 2026-04-23
 
 ### 新功能
 
@@ -40,6 +19,15 @@ All notable changes to this project will be documented in this file.
 - 修复 node 下 loading 按钮计算错误问题
 - 修复 Linux 端的安装问题
 - 修复类型校验问题
+- **Package**: `files` 字段补充遗漏的 `scripts/run-parallel.mjs`，修复 npm install 时 `MODULE_NOT_FOUND` 错误
+
+### 变更
+
+- **Commands**: 移除 `desktop` 命令及相关注册
+- **UI**: `LogoV2` 强制使用 condensed 模式，跳过 release notes / onboarding 检测
+- **Tips**: 将 desktop app 提示文案更新为 CoStrict Web
+- **Package**: 包名改为 `@costrict/csc`，描述更新为 `costrict`
+- **Bin**: bin 命令统一为 `csc`，移除 `ccb`、`ccb-bun`、`claude-code-best`
 
 ## [4.0.6] - 2026-04-16
 
