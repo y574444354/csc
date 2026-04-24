@@ -36,7 +36,8 @@
     "dist",
     "scripts/postinstall.cjs",
     "scripts/run-parallel.mjs",
-    "scripts/setup-chrome-mcp.mjs"
+    "scripts/setup-chrome-mcp.mjs",
+    "scripts/install-cosknow.mjs"
   ],
   "scripts": {
     "build": "bun run build.ts",
@@ -53,7 +54,7 @@
     "test": "bun test",
     "check:unused": "knip-bun",
     "health": "bun run scripts/health-check.ts",
-    "postinstall": "node scripts/run-parallel.mjs scripts/postinstall.cjs scripts/setup-chrome-mcp.mjs",
+    "postinstall": "node scripts/run-parallel.mjs scripts/postinstall.cjs scripts/setup-chrome-mcp.mjs scripts/install-cosknow.mjs",
     "docs:dev": "npx mintlify dev",
     "typecheck": "tsc --noEmit",
     "rcs": "bun run scripts/rcs.ts"
@@ -61,6 +62,7 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.19.0",
     "@claude-code-best/mcp-chrome-bridge": "^2.0.8",
+    "cosknow": "latest",
     "ws": "^8.20.0"
   },
   "devDependencies": {
