@@ -1243,9 +1243,11 @@ async function getInputPrompt(
 async function run(): Promise<CommanderCommand> {
 	profileCheckpoint("run_function_start");
 
-	// Create help config that sorts options by long option name.
-	// Commander supports compareOptions at runtime but @commander-js/extra-typings
-	// doesn't include it in the type definitions, so we use Object.assign to add it.
+	// Create help config that sorts options by long option name and puts
+	// Commands section before Options section in the root command's help output.
+	// Commander supports compareOptions/formatHelp at runtime but
+	// @commander-js/extra-typings doesn't include them in the type definitions,
+	// so we use Object.assign to add them.
 	function createSortedHelpConfig(): {
 		sortSubcommands: true;
 		sortOptions: true;
@@ -1257,10 +1259,72 @@ async function run(): Promise<CommanderCommand> {
 			{
 				compareOptions: (a: Option, b: Option) =>
 					getOptionSortKey(a).localeCompare(getOptionSortKey(b)),
+				// Reorder help sections: Usage → Description → Arguments →
+				// Commands → Options (matching cs/opencode style).
+				// Uses duck-typed access because @commander-js/extra-typings
+				// doesn't expose the full Help class API.
+				formatHelp: (cmd: CommanderCommand, helper: unknown) => {
+					const h = helper as {
+						padWidth: (cmd: CommanderCommand, helper: unknown) => number;
+						helpWidth: number;
+						commandUsage: (cmd: CommanderCommand) => string;
+						commandDescription: (cmd: CommanderCommand) => string;
+						visibleArguments: (cmd: CommanderCommand) => unknown[];
+						visibleCommands: (cmd: CommanderCommand) => unknown[];
+						visibleOptions: (cmd: CommanderCommand) => unknown[];
+						argumentTerm: (arg: unknown) => string;
+						argumentDescription: (arg: unknown) => string;
+						subcommandTerm: (cmd: unknown) => string;
+						subcommandDescription: (cmd: unknown) => string;
+						optionTerm: (opt: unknown) => string;
+						optionDescription: (opt: unknown) => string;
+						formatItem: (term: string, termWidth: number, description: string, helper: unknown) => string;
+						styleTitle: (s: string) => string;
+						styleUsage: (s: string) => string;
+						styleCommandDescription: (s: string) => string;
+						styleArgumentTerm: (s: string) => string;
+						styleArgumentDescription: (s: string) => string;
+						styleSubcommandTerm: (s: string) => string;
+						styleSubcommandDescription: (s: string) => string;
+						styleOptionTerm: (s: string) => string;
+						styleOptionDescription: (s: string) => string;
+						boxWrap: (s: string, width: number) => string;
+					};
+					const termWidth = h.padWidth(cmd, helper);
+					const helpWidth = h.helpWidth ?? 80;
+					const fmt = (term: string, desc: string) =>
+						h.formatItem(term, termWidth, desc, helper);
+
+					let output = [
+						`${h.styleTitle('Usage:')} ${h.styleUsage(h.commandUsage(cmd))}`,
+						'',
+					];
+
+					const desc = h.commandDescription(cmd);
+					if (desc.length > 0) {
+						output = output.concat([h.boxWrap(h.styleCommandDescription(desc), helpWidth), '']);
+					}
+
+					// Order: Commands → Options → Arguments (matches usage line: [options] [command] [prompt])
+					const cmdList = h.visibleCommands(cmd).map(c =>
+						fmt(h.styleSubcommandTerm(h.subcommandTerm(c)), h.styleSubcommandDescription(h.subcommandDescription(c))));
+					if (cmdList.length > 0) output = output.concat([h.styleTitle('Commands:'), ...cmdList, '']);
+
+					const optList = h.visibleOptions(cmd).map(o =>
+						fmt(h.styleOptionTerm(h.optionTerm(o)), h.styleOptionDescription(h.optionDescription(o))));
+					if (optList.length > 0) output = output.concat([h.styleTitle('Options:'), ...optList, '']);
+
+					const argList = h.visibleArguments(cmd).map(a =>
+						fmt(h.styleArgumentTerm(h.argumentTerm(a)), h.styleArgumentDescription(h.argumentDescription(a))));
+					if (argList.length > 0) output = output.concat([h.styleTitle('Arguments:'), ...argList, '']);
+
+					return output.join('\n');
+				},
 			},
 		);
 	}
 	const program = new CommanderCommand()
+		.addHelpCommand(false)
 		.configureHelp(createSortedHelpConfig())
 		.enablePositionalOptions();
 	profileCheckpoint("run_commander_initialized");
@@ -1340,10 +1404,9 @@ async function run(): Promise<CommanderCommand> {
 	});
 
 	program
-		.name("claude")
-		.description(
-			`CoStrict - starts an interactive session by default, use -p/--print for non-interactive output`,
-		)
+		.name("csc")
+		.description(`CoStrict AI coding assistant`)
+		.usage("[command] [options] [prompt]")
 		.argument("[prompt]", "Your prompt", String)
 		// Subcommands inherit helpOption via commander's copyInheritedSettings —
 		// setting it once here covers mcp, plugin, auth, and all other subcommands.
@@ -1363,25 +1426,28 @@ async function run(): Promise<CommanderCommand> {
 				.argParser(Boolean)
 				.hideHelp(),
 		)
-		.option(
-			"--debug-file <path>",
-			"Write debug logs to a specific file path (implicitly enables debug mode)",
-			() => true,
+		.addOption(
+			new Option("--debug-file <path>", "Write debug logs to a specific file path (implicitly enables debug mode)")
+				.argParser(() => true)
+				.hideHelp(),
 		)
-		.option(
-			"--verbose",
-			"Override verbose mode setting from config",
-			() => true,
+		.addOption(
+			new Option("--verbose", "Override verbose mode setting from config")
+				.argParser(() => true)
+				.hideHelp(),
 		)
 		.option(
 			"-p, --print",
-			"Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when Claude is run with the -p mode. Only use this flag in directories you trust.",
+			"Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when CSC is run with the -p mode. Only use this flag in directories you trust.",
 			() => true,
 		)
-		.option(
-			"--bare",
-			"Minimal mode: skip hooks, LSP, plugin sync, attribution, auto-memory, background prefetches, keychain reads, and CLAUDE.md auto-discovery. Sets CLAUDE_CODE_SIMPLE=1. Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper via --settings (OAuth and keychain are never read). 3P providers (Bedrock/Vertex/Foundry) use their own credentials. Skills still resolve via /skill-name. Explicitly provide context via: --system-prompt[-file], --append-system-prompt[-file], --add-dir (CLAUDE.md dirs), --mcp-config, --settings, --agents, --plugin-dir.",
-			() => true,
+		.addOption(
+			new Option(
+				"--bare",
+				"Minimal mode: skip hooks, LSP, plugin sync, attribution, auto-memory, background prefetches, keychain reads, and CLAUDE.md auto-discovery. Sets CLAUDE_CODE_SIMPLE=1. Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper via --settings (OAuth and keychain are never read). 3P providers (Bedrock/Vertex/Foundry) use their own credentials. Skills still resolve via /skill-name. Explicitly provide context via: --system-prompt[-file], --append-system-prompt[-file], --add-dir (CLAUDE.md dirs), --mcp-config, --settings, --agents, --plugin-dir.",
+			)
+				.argParser(() => true)
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1412,33 +1478,39 @@ async function run(): Promise<CommanderCommand> {
 				"--json-schema <schema>",
 				"JSON Schema for structured output validation. " +
 					'Example: {"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}',
-			).argParser(String),
+			)
+				.argParser(String)
+				.hideHelp(),
 		)
-		.option(
-			"--include-hook-events",
-			"Include all hook lifecycle events in the output stream (only works with --output-format=stream-json)",
-			() => true,
+		.addOption(
+			new Option("--include-hook-events", "Include all hook lifecycle events in the output stream (only works with --output-format=stream-json)")
+				.argParser(() => true)
+				.hideHelp(),
 		)
-		.option(
-			"--include-partial-messages",
-			"Include partial message chunks as they arrive (only works with --print and --output-format=stream-json)",
-			() => true,
+		.addOption(
+			new Option("--include-partial-messages", "Include partial message chunks as they arrive (only works with --print and --output-format=stream-json)")
+				.argParser(() => true)
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
 				"--input-format <format>",
 				'Input format (only works with --print): "text" (default), or "stream-json" (realtime streaming input)',
-			).choices(["text", "stream-json"]),
+			)
+				.choices(["text", "stream-json"])
+				.hideHelp(),
 		)
-		.option(
-			"--mcp-debug",
-			"[DEPRECATED. Use --debug instead] Enable MCP debug mode (shows MCP server errors)",
-			() => true,
+		.addOption(
+			new Option(
+				"--mcp-debug",
+				"[DEPRECATED. Use --debug instead] Enable MCP debug mode (shows MCP server errors)",
+			)
+				.argParser(() => true)
+				.hideHelp(),
 		)
-		.option(
-			"--dangerously-skip-permissions",
-			"Bypass all permission checks. Recommended only for sandboxes with no internet access.",
-			() => true,
+		.addOption(
+			new Option("--dangerously-skip-permissions", "Bypass all permission checks. Recommended only for sandboxes with no internet access.")
+				.argParser(() => true),
 		)
 	// 		.option(
 	// 			"--allow-dangerously-skip-permissions",
@@ -1473,15 +1545,17 @@ async function run(): Promise<CommanderCommand> {
 			new Option(
 				"--max-budget-usd <amount>",
 				"Maximum dollar amount to spend on API calls (only works with --print)",
-			).argParser((value) => {
-				const amount = Number(value);
-				if (isNaN(amount) || amount <= 0) {
-					throw new Error(
-						"--max-budget-usd must be a positive number greater than 0",
-					);
-				}
-				return amount;
-			}),
+			)
+				.argParser((value) => {
+					const amount = Number(value);
+					if (isNaN(amount) || amount <= 0) {
+						throw new Error(
+							"--max-budget-usd must be a positive number greater than 0",
+						);
+					}
+					return amount;
+				})
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1503,10 +1577,10 @@ async function run(): Promise<CommanderCommand> {
 				})
 				.hideHelp(),
 		)
-		.option(
-			"--replay-user-messages",
-			"Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)",
-			() => true,
+		.addOption(
+			new Option("--replay-user-messages", "Re-emit user messages from stdin back on stdout for acknowledgment (only works with --input-format=stream-json and --output-format=stream-json)")
+				.argParser(() => true)
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1516,21 +1590,35 @@ async function run(): Promise<CommanderCommand> {
 				.default(false)
 				.hideHelp(),
 		)
-		.option(
-			"--allowedTools, --allowed-tools <tools...>",
-			'Comma or space-separated list of tool names to allow (e.g. "Bash(git:*) Edit")',
+		.addOption(
+			new Option(
+				"--allowed-tools <tools...>",
+				'Comma or space-separated list of tool names to allow (e.g. "Bash(git:*) Edit")',
+			).hideHelp(),
 		)
-		.option(
-			"--tools <tools...>",
-			'Specify the list of available tools from the built-in set. Use "" to disable all tools, "default" to use all tools, or specify tool names (e.g. "Bash,Edit,Read").',
+		.addOption(
+			new Option(
+				"--allowedTools <tools...>",
+				'Comma or space-separated list of tool names to allow (e.g. "Bash(git:*) Edit")',
+			).hideHelp(),
 		)
-		.option(
-			"--disallowedTools, --disallowed-tools <tools...>",
-			'Comma or space-separated list of tool names to deny (e.g. "Bash(git:*) Edit")',
+		.addOption(
+			new Option("--tools <tools...>", 'Specify the list of available tools from the built-in set. Use "" to disable all tools, "default" to use all tools, or specify tool names (e.g. "Bash,Edit,Read").').hideHelp(),
 		)
-		.option(
-			"--mcp-config <configs...>",
-			"Load MCP servers from JSON files or strings (space-separated)",
+		.addOption(
+			new Option(
+				"--disallowed-tools <tools...>",
+				'Comma or space-separated list of tool names to deny (e.g. "Bash(git:*) Edit")',
+			).hideHelp(),
+		)
+		.addOption(
+			new Option(
+				"--disallowedTools <tools...>",
+				'Comma or space-separated list of tool names to deny (e.g. "Bash(git:*) Edit")',
+			).hideHelp(),
+		)
+		.addOption(
+			new Option("--mcp-config <configs...>", "Load MCP servers from JSON files or strings (space-separated)").hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1558,7 +1646,9 @@ async function run(): Promise<CommanderCommand> {
 			new Option(
 				"--append-system-prompt <prompt>",
 				"Append a system prompt to the default system prompt",
-			).argParser(String),
+			)
+				.argParser(String)
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1586,10 +1676,10 @@ async function run(): Promise<CommanderCommand> {
 			"Resume a conversation by session ID, or open interactive picker with optional search term",
 			(value) => value || true,
 		)
-		.option(
-			"--fork-session",
-			"When resuming, create a new session ID instead of reusing the original (use with --resume or --continue)",
-			() => true,
+		.addOption(
+			new Option("--fork-session", "When resuming, create a new session ID instead of reusing the original (use with --resume or --continue)")
+				.argParser(() => true)
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1620,14 +1710,14 @@ async function run(): Promise<CommanderCommand> {
 				})
 				.hideHelp(),
 		)
-		.option(
-			"--from-pr [value]",
-			"Resume a session linked to a PR by PR number/URL, or open interactive picker with optional search term",
-			(value) => value || true,
+		.addOption(
+			new Option("--from-pr [value]", "Resume a session linked to a PR by PR number/URL, or open interactive picker with optional search term")
+				.argParser((value) => value || true)
+				.hideHelp(),
 		)
-		.option(
-			"--no-session-persistence",
-			"Disable session persistence - sessions will not be saved to disk and cannot be resumed (only works with --print)",
+		.addOption(
+			new Option("--no-session-persistence", "Disable session persistence - sessions will not be saved to disk and cannot be resumed (only works with --print)")
+				.hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1646,34 +1736,34 @@ async function run(): Promise<CommanderCommand> {
 		// @[MODEL LAUNCH]: Update the example model ID in the --model help text.
 		.option(
 			"--model <model>",
-			`Model for the current session. Provide an alias for the latest model (e.g. 'sonnet' or 'opus') or a model's full name (e.g. 'claude-sonnet-4-6').`,
+			`Model for the current session. Provide a model's full name (e.g. 'GLM-5.1').`,
 		)
 		.addOption(
 			new Option(
 				"--effort <level>",
 				`Effort level for the current session (low, medium, high, max)`,
-			).argParser((rawValue: string) => {
-				const value = rawValue.toLowerCase();
-				const allowed = ["low", "medium", "high", "max"];
-				if (!allowed.includes(value)) {
-					throw new InvalidArgumentError(
-						`It must be one of: ${allowed.join(", ")}`,
-					);
-				}
-				return value;
-			}),
+			)
+				.argParser((rawValue: string) => {
+					const value = rawValue.toLowerCase();
+					const allowed = ["low", "medium", "high", "max"];
+					if (!allowed.includes(value)) {
+						throw new InvalidArgumentError(
+							`It must be one of: ${allowed.join(", ")}`,
+						);
+					}
+					return value;
+				})
+				.hideHelp(),
 		)
 		.option(
 			"--agent <agent>",
 			`Agent for the current session. Overrides the 'agent' setting.`,
 		)
-		.option(
-			"--betas <betas...>",
-			"Beta headers to include in API requests (API key users only)",
+		.addOption(
+			new Option("--betas <betas...>", "Beta headers to include in API requests (API key users only)").hideHelp(),
 		)
-		.option(
-			"--fallback-model <model>",
-			"Enable automatic fallback to specified model when default model is overloaded (only works with --print)",
+		.addOption(
+			new Option("--fallback-model <model>", "Enable automatic fallback to specified model when default model is overloaded (only works with --print)").hideHelp(),
 		)
 		.addOption(
 			new Option(
@@ -1689,49 +1779,46 @@ async function run(): Promise<CommanderCommand> {
 			"--add-dir <directories...>",
 			"Additional directories to allow tool access to",
 		)
-		.option(
-			"--ide",
-			"Automatically connect to IDE on startup if exactly one valid IDE is available",
-			() => true,
+		.addOption(
+			new Option("--ide", "Automatically connect to IDE on startup if exactly one valid IDE is available")
+				.argParser(() => true)
+				.hideHelp(),
 		)
-		.option(
-			"--strict-mcp-config",
-			"Only use MCP servers from --mcp-config, ignoring all other MCP configurations",
-			() => true,
+		.addOption(
+			new Option("--strict-mcp-config", "Only use MCP servers from --mcp-config, ignoring all other MCP configurations")
+				.argParser(() => true)
+				.hideHelp(),
 		)
-		.option(
-			"--session-id <uuid>",
-			"Use a specific session ID for the conversation (must be a valid UUID)",
+		.addOption(
+			new Option("--session-id <uuid>", "Use a specific session ID for the conversation (must be a valid UUID)").hideHelp(),
 		)
-		.option(
-			"-n, --name <name>",
-			"Set a display name for this session (shown in /resume and terminal title)",
+		.addOption(
+			new Option("-n, --name <name>", "Set a display name for this session (shown in /resume and terminal title)").hideHelp(),
 		)
-		.option(
-			"--agents <json>",
-			'JSON object defining custom agents (e.g. \'{"reviewer": {"description": "Reviews code", "prompt": "You are a code reviewer"}}\')',
+		.addOption(
+			new Option("--agents <json>", 'JSON object defining custom agents (e.g. \'{"reviewer": {"description": "Reviews code", "prompt": "You are a code reviewer"}}\')').hideHelp(),
 		)
-		.option(
-			"--setting-sources <sources>",
-			"Comma-separated list of setting sources to load (user, project, local).",
+		.addOption(
+			new Option("--setting-sources <sources>", "Comma-separated list of setting sources to load (user, project, local).").hideHelp(),
 		)
 		// gh-33508: <paths...> (variadic) consumed everything until the next
 		// --flag. `claude --plugin-dir /path mcp add --transport http` swallowed
 		// `mcp` and `add` as paths, then choked on --transport as an unknown
 		// top-level option. Single-value + collect accumulator means each
 		// --plugin-dir takes exactly one arg; repeat the flag for multiple dirs.
-		.option(
-			"--plugin-dir <path>",
-			"Load plugins from a directory for this session only (repeatable: --plugin-dir A --plugin-dir B)",
-			(val: string, prev: string[]) => [...prev, val],
-			[] as string[],
+		.addOption(
+			new Option("--plugin-dir <path>", "Load plugins from a directory for this session only (repeatable: --plugin-dir A --plugin-dir B)")
+				.argParser((val: string, prev: string[]) => [...prev, val])
+				.default([] as string[])
+				.hideHelp(),
 		)
-		.option("--disable-slash-commands", "Disable all skills", () => true)
-		.option("--chrome", "Enable Claude in Chrome integration")
-		.option("--no-chrome", "Disable Claude in Chrome integration")
-		.option(
-			"--file <specs...>",
-			"File resources to download at startup. Format: file_id:relative_path (e.g., --file file_abc:doc.txt file_def:img.png)",
+		.addOption(
+			new Option("--disable-slash-commands", "Disable all skills").argParser(() => true).hideHelp(),
+		)
+		.addOption(new Option("--chrome", "Enable Claude in Chrome integration").hideHelp())
+		.addOption(new Option("--no-chrome", "Disable Claude in Chrome integration").hideHelp())
+		.addOption(
+			new Option("--file <specs...>", "File resources to download at startup. Format: file_id:relative_path (e.g., --file file_abc:doc.txt file_def:img.png)").hideHelp(),
 		)
 		.action(async (prompt, options) => {
 			profileCheckpoint("action_handler_start");
@@ -5532,13 +5619,11 @@ async function run(): Promise<CommanderCommand> {
 		);
 
 	// Worktree flags
-	program.option(
-		"-w, --worktree [name]",
-		"Create a new git worktree for this session (optionally specify a name)",
+	program.addOption(
+		new Option("-w, --worktree [name]", "Create a new git worktree for this session (optionally specify a name)").hideHelp(),
 	);
-	program.option(
-		"--tmux",
-		"Create a tmux session for the worktree (requires --worktree). Uses iTerm2 native panes when available; use --tmux=classic for traditional tmux.",
+	program.addOption(
+		new Option("--tmux", "Create a tmux session for the worktree (requires --worktree). Uses iTerm2 native panes when available; use --tmux=classic for traditional tmux.").hideHelp(),
 	);
 
 	if (canUserConfigureAdvisor()) {
@@ -5598,7 +5683,7 @@ async function run(): Promise<CommanderCommand> {
 
 	if (feature("PROACTIVE") || feature("KAIROS")) {
 		program.addOption(
-			new Option("--proactive", "Start in proactive autonomous mode"),
+			new Option("--proactive", "Start in proactive autonomous mode").hideHelp(),
 		);
 	}
 
@@ -5607,7 +5692,7 @@ async function run(): Promise<CommanderCommand> {
 			new Option(
 				"--messaging-socket-path <path>",
 				"Unix domain socket path for the UDS messaging server (defaults to a tmp path)",
-			),
+			).hideHelp(),
 		);
 	}
 
@@ -5616,7 +5701,7 @@ async function run(): Promise<CommanderCommand> {
 			new Option(
 				"--brief",
 				"Enable SendUserMessage tool for agent-to-user communication",
-			),
+			).hideHelp(),
 		);
 	}
 	if (feature("KAIROS")) {
@@ -5759,6 +5844,7 @@ async function run(): Promise<CommanderCommand> {
 	const mcp = program
 		.command("mcp")
 		.description("Configure and manage MCP servers")
+		.addHelpCommand(false)
 		.configureHelp(createSortedHelpConfig())
 		.enablePositionalOptions();
 
@@ -5792,6 +5878,7 @@ async function run(): Promise<CommanderCommand> {
 	}
 
 	mcp.command("remove <name>")
+		.alias("rm")
 		.description("Remove an MCP server")
 		.option(
 			"-s, --scope <scope>",
@@ -5803,18 +5890,15 @@ async function run(): Promise<CommanderCommand> {
 		});
 
 	mcp.command("list")
-		.description(
-			"List configured MCP servers. Note: The workspace trust dialog is skipped and stdio servers from .mcp.json are spawned for health checks. Only use this command in directories you trust.",
-		)
+		.alias("ls")
+		.description("List configured MCP servers")
 		.action(async () => {
 			const { mcpListHandler } = await import("./cli/handlers/mcp.js");
 			await mcpListHandler();
 		});
 
 	mcp.command("get <name>")
-		.description(
-			"Get details about an MCP server. Note: The workspace trust dialog is skipped and stdio servers from .mcp.json are spawned for health checks. Only use this command in directories you trust.",
-		)
+		.description("Get details about an MCP server")
 		.action(async (name: string) => {
 			const { mcpGetHandler } = await import("./cli/handlers/mcp.js");
 			await mcpGetHandler(name);
@@ -6088,6 +6172,7 @@ async function run(): Promise<CommanderCommand> {
 	const auth = program
 		.command("auth")
 		.description("Manage authentication")
+		.addHelpCommand(false)
 		.configureHelp(createSortedHelpConfig());
 
 	auth.command("login")
@@ -6149,7 +6234,9 @@ async function run(): Promise<CommanderCommand> {
 	const pluginCmd = program
 		.command("plugin")
 		.alias("plugins")
+		.alias("plug")
 		.description("Manage CoStrict plugins")
+		.addHelpCommand(false)
 		.configureHelp(createSortedHelpConfig());
 
 	pluginCmd
@@ -6165,6 +6252,7 @@ async function run(): Promise<CommanderCommand> {
 	// Plugin list command
 	pluginCmd
 		.command("list")
+		.alias("ls")
 		.description("List installed plugins")
 		.option("--json", "Output as JSON")
 		.option(
@@ -6406,7 +6494,7 @@ async function run(): Promise<CommanderCommand> {
 		// Reads from disk cache — GrowthBook isn't initialized at registration time.
 		if (getAutoModeEnabledStateIfCached() !== "disabled") {
 			const autoModeCmd = program
-				.command("auto-mode")
+				.command("auto-mode", { hidden: true })
 				.description("Inspect auto mode classifier configuration");
 
 			autoModeCmd
@@ -6471,7 +6559,7 @@ async function run(): Promise<CommanderCommand> {
 
 	if (feature("KAIROS")) {
 		program
-			.command("assistant [sessionId]")
+			.command("assistant [sessionId]", { hidden: true })
 			.description(
 				"Attach the REPL as a client to a running bridge session. Discovers sessions via API if no sessionId given.",
 			)
@@ -6503,7 +6591,7 @@ async function run(): Promise<CommanderCommand> {
   program
     .command('doctor')
     .description(
-      'Check the health of your CoStrict auto-updater. Note: The workspace trust dialog is skipped and stdio servers from .mcp.json are spawned for health checks. Only use this command in directories you trust.',
+      'Check the health of your CoStrict auto-updater',
     )
     .action(async () => {
       const [{ doctorHandler }, { createRoot }] = await Promise.all([
