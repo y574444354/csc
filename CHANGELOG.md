@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.13] - 2026-04-29
+
+### 品牌重构
+
+- **Rebrand**: CLI 从 Claude 全面重命名为 CoStrict/csc，包括命令行帮助输出、终端标题等
+- 统一所有 provider 的 User-Agent 为 `csc/${VERSION}`
+
+### 功能改进
+
+- **BUDDY 功能默认启用**：移除日期限制，开箱即用
+- **构建时替换 feature flags**：构建产物中自动将 `feature('FLAG_NAME')` 替换为 `true/false`，不再依赖运行时环境变量
+- **内置 KB 套件（cosknow）**：打包时将 KB 知识库套件内置进 csc，安装后自动注册命令到 `~/.claude/commands/`
+
+### Bug 修复
+
+- **修复 CoStrict provider 递归解析问题**：`getDefaultSonnetModel` / `getDefaultHaikuModel` 返回具体模型名，避免无限递归
+- **修复 sideQuery/模型选择**：CoStrict 和 OpenAI provider 下的模型选择逻辑
+- **修复登录提示问题**：将 costrict 加入 `is3P` 判断，消除登录后误报的 "Not logged in" 提示
+- **修复 truncate 函数崩溃**：处理 `undefined` / `null` 输入时不再崩溃
+- **修复 ripgrep 安装**：支持内网私服兜底下载
+
+### 性能优化
+
+- **移除消息流中的 diff 渲染**：仅保留权限审批页面的 diff 展示，降低内存峰值
+
+### 安全加固
+
+- **网络伪设备重定向检测**：添加 `/dev/tcp`、`/dev/udp` 等 Bash 网络伪设备的安全检测
+
+### 测试
+
+- 添加 subagent 僵死场景相关测试用例
+- 修复 RemoteTriggerTool 和 autonomy 测试的全量运行失败
+
 ## [4.0.12] - 2026-04-24
 
 ### 变更
