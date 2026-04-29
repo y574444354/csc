@@ -72,24 +72,27 @@ export function ModelPicker({
   const exitState = useExitOnCtrlCDWithKeybindings();
   const maxVisible = 10;
 
-  // 将 costrict-login 伪模型值映射为默认选项（未选择）
-  const initialValue = initial === null || initial === 'costrict-login' ? NO_PREFERENCE : initial;
+  const initialValue = initial === null ? NO_PREFERENCE : initial;
   const [focusedValue, setFocusedValue] = useState<string | undefined>(initialValue);
 
   const isFastMode = useAppState(s => (isFastModeEnabled() ? s.fastMode : false));
 
   const [marked1MValues, setMarked1MValues] = useState<Set<string>>(
-    () => new Set(has1mContext(initialValue) ? [initialValue.replace(/\[1m\]/i, '')] : [])
+    () => new Set(has1mContext(initialValue) ? [initialValue.replace(/\[1m\]/i, '')] : []),
   );
 
   const handleToggle1M = useCallback(() => {
     if (!focusedValue || focusedValue === NO_PREFERENCE) return;
+    // Key on the base value so lookups in handleSelect / is1MMarked match the
+    // initializer — predefined 1M options arrive with a `[1m]` suffix in
+    // `focusedValue`, which would diverge from the base-value key set.
+    const baseKey = focusedValue.replace(/\[1m\]/i, '');
     setMarked1MValues(prev => {
       const next = new Set(prev);
-      if (next.has(focusedValue)) {
-        next.delete(focusedValue);
+      if (next.has(baseKey)) {
+        next.delete(baseKey);
       } else {
-        next.add(focusedValue);
+        next.add(baseKey);
       }
       return next;
     });
@@ -107,11 +110,7 @@ export function ModelPicker({
   // Ensure the initial value is in the options list
   // This handles edge cases where the user's current model (e.g., 'haiku' for 3P users)
   // is not in the base options but should still be selectable and shown as selected
-  // 忽略 costrict-login 伪模型值
   const optionsWithInitial = useMemo(() => {
-    if (initial === 'costrict-login') {
-      return modelOptions;
-    }
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
       return [
         ...modelOptions,
@@ -142,7 +141,10 @@ export function ModelPicker({
 
   const focusedModelName = selectOptions.find(opt => opt.value === focusedValue)?.label;
   const focusedModel = resolveOptionModel(focusedValue);
-  const is1MMarked = focusedValue !== undefined && focusedValue !== NO_PREFERENCE && marked1MValues.has(focusedValue);
+  const is1MMarked =
+    focusedValue !== undefined &&
+    focusedValue !== NO_PREFERENCE &&
+    marked1MValues.has(focusedValue.replace(/\[1m\]/i, ''));
   const focusedSupportsEffort = focusedModel ? modelSupportsEffort(focusedModel) : false;
   const focusedSupportsMax = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
   const focusedDefaultEffort = getDefaultEffortLevelForOption(focusedValue);
@@ -208,9 +210,12 @@ export function ModelPicker({
       onSelect(null, selectedEffort);
       return;
     }
-    // Apply or strip [1m] suffix based on user toggle
-    const wants1M = marked1MValues.has(value);
+    // Apply or strip [1m] suffix based on user toggle. marked1MValues is keyed
+    // on the base value (see initializer + handleToggle1M), so look up with the
+    // base form — not `value`, which may carry a `[1m]` suffix from predefined
+    // 1M options and would never match.
     const baseValue = value.replace(/\[1m\]/i, '');
+    const wants1M = marked1MValues.has(baseValue);
     const finalValue = wants1M ? `${baseValue}[1m]` : baseValue;
     onSelect(finalValue, selectedEffort);
   }
@@ -224,7 +229,7 @@ export function ModelPicker({
           </Text>
           <Text dimColor>
             {headerText ??
-              'Switch between CoStrict models. Applies to this session and future CoStrict sessions. For other/previous model names, specify with --model.'}
+              'Switch between Claude models. Applies to this session and future Claude Code sessions. For other/previous model names, specify with --model.'}
           </Text>
           {sessionModel && (
             <Text dimColor>

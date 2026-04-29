@@ -1,11 +1,44 @@
 import { defineConfig, type Plugin } from "vite";
 import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import { getMacroDefines } from "./scripts/defines";
 import featureFlagsPlugin from "./scripts/vite-plugin-feature-flags";
 import importMetaRequirePlugin from "./scripts/vite-plugin-import-meta-require";
 
-const projectRoot = dirname(new URL(import.meta.url).pathname);
+const projectRoot = dirname(fileURLToPath(import.meta.url));
+
+const acknowledgedBuildWarnings = [
+  "src/utils/sandbox/sandbox-adapter.ts",
+  "packages/builtin-tools/src/tools/ToolSearchTool/prompt.ts",
+  "src/utils/claudemd.ts",
+  "src/services/SessionMemory/sessionMemoryUtils.ts",
+  "src/commands/logout/logout.tsx",
+  "src/utils/sessionStorage.ts",
+  "src/utils/swarm/backends/registry.ts",
+  "src/utils/toolSearch.ts",
+  "src/utils/hooks.ts",
+  "src/services/skillLearning/sessionObserver.ts",
+  "src/utils/settings/changeDetector.ts",
+];
+
+function isAcknowledgedBuildWarning(warning: {
+  code?: string;
+  id?: string;
+  message?: string;
+}): boolean {
+  if (
+    warning.code === "EVAL" &&
+    warning.id?.includes("@protobufjs+inquire")
+  ) {
+    return true;
+  }
+
+  return (
+    warning.code === "INEFFECTIVE_DYNAMIC_IMPORT" &&
+    acknowledgedBuildWarnings.some((id) => warning.message?.includes(id))
+  );
+}
 
 /**
  * Plugin to import .md files as raw strings (Bun's text loader behavior).
@@ -45,7 +78,7 @@ export default defineConfig({
   build: {
     emptyOutDir: true,
     outDir: "dist",
-    target: "esnext",
+    target: "es2020",
     copyPublicDir: false,
     sourcemap: false,
     minify: false,
@@ -63,20 +96,16 @@ export default defineConfig({
         chunkFileNames: "chunks/[name]-[hash].js",
       },
 
-      // Externalize native addon packages (they contain .node binaries)
-      external: [
-        /audio-capture-napi/,
-        /color-diff-napi/,
-        /image-processor-napi/,
-        /modifiers-napi/,
-        /url-handler-napi/,
-      ],
-
       plugins: [
         rawAssetPlugin([".md", ".txt", ".html", ".css"]),
         featureFlagsPlugin(),
         importMetaRequirePlugin(),
       ],
+
+      onwarn(warning, defaultHandler) {
+        if (isAcknowledgedBuildWarning(warning)) return;
+        defaultHandler(warning);
+      },
     },
 
     cssCodeSplit: false,

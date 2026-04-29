@@ -1,8 +1,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { BetaToolUnion } from '@anthropic-ai/sdk/resources/beta/messages.js'
-import OpenAI from 'openai'
 import {
   getLastApiCompletionTimestamp,
+  getSessionId,
   setLastApiCompletionTimestamp,
 } from '../bootstrap/state.js'
 import { STRUCTURED_OUTPUTS_BETA_HEADER } from '../constants/betas.js'
@@ -15,20 +15,15 @@ import { logEvent } from '../services/analytics/index.js'
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../services/analytics/metadata.js'
 import { getAPIMetadata } from '../services/api/claude.js'
 import { getAnthropicClient } from '../services/api/client.js'
-import { getOpenAIClient } from '../services/api/openai/client.js'
-import { resolveOpenAIModel } from '@ant/model-provider'
-import { anthropicMessagesToOpenAI } from '@ant/model-provider'
-import { createCoStrictFetch } from '../costrict/provider/fetch.js'
-import { loadCoStrictCredentials } from '../costrict/provider/credentials.js'
-import { getCoStrictBaseURL } from '../costrict/provider/auth.js'
-import { resolveCoStrictModel } from '../costrict/provider/modelMapping.js'
-import { getProxyFetchOptions } from './proxy.js'
+import { createTrace, createChildSpan, endTrace, recordLLMObservation } from '../services/langfuse/index.js'
+import type { LangfuseSpan } from '../services/langfuse/index.js'
+import { convertMessagesToLangfuse, convertOutputToLangfuse, convertToolsToLangfuse } from '../services/langfuse/convert.js'
 import { getModelBetas, modelSupportsStructuredOutputs } from './betas.js'
+import { logForDebugging } from './debug.js'
+import { errorMessage } from './errors.js'
 import { computeFingerprint } from './fingerprint.js'
-import { normalizeModelStringForAPI } from './model/model.js'
 import { getAPIProvider } from './model/providers.js'
-import { asSystemPrompt } from './systemPromptType.js'
-import type { UserMessage, AssistantMessage } from '../types/message.js'
+import { normalizeModelStringForAPI } from './model/model.js'
 
 type MessageParam = Anthropic.MessageParam
 type TextBlockParam = Anthropic.TextBlockParam
@@ -73,6 +68,11 @@ export type SideQueryOptions = {
   stop_sequences?: string[]
   /** Attributes this call in tengu_api_success for COGS joining against reporting.sampling_calls. */
   querySource: QuerySource
+  /** Parent Langfuse span to nest this side query under the main agent trace. */
+  parentSpan?: LangfuseSpan | null
+  /** When true, API failures are recorded as WARNING instead of ERROR in Langfuse.
+   *  Use for optional/best-effort queries where failure is expected and handled gracefully. */
+  optional?: boolean
 }
 
 /**
@@ -133,15 +133,6 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
     stop_sequences,
   } = opts
 
-  // Route to appropriate provider
-  const provider = getAPIProvider()
-  if (provider === 'costrict') {
-    return sideQueryCoStrict(opts)
-  }
-  if (provider === 'openai') {
-    return sideQueryOpenAI(opts)
-  }
-
   const client = await getAnthropicClient({
     maxRetries,
     model,
@@ -198,25 +189,65 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
   }
 
   const normalizedModel = normalizeModelStringForAPI(model)
+  const provider = getAPIProvider()
   const start = Date.now()
-  // biome-ignore lint/plugin: this IS the wrapper that handles OAuth attribution
-  const response = await client.beta.messages.create(
-    {
-      model: normalizedModel,
-      max_tokens,
-      system: systemBlocks,
-      messages,
-      ...(tools && { tools }),
-      ...(tool_choice && { tool_choice }),
-      ...(output_format && { output_config: { format: output_format } }),
-      ...(temperature !== undefined && { temperature }),
-      ...(stop_sequences && { stop_sequences }),
-      ...(thinkingConfig && { thinking: thinkingConfig }),
-      ...(betas.length > 0 && { betas }),
-      metadata: getAPIMetadata(),
-    },
-    { signal },
-  )
+  const traceName = `side-query:${opts.querySource}`
+
+  // When parentSpan is provided, create a child span nested under the
+  // main agent trace; otherwise create a standalone root trace.
+  const _ps = opts.parentSpan
+  // eslint-disable-next-line no-constant-condition
+  if (opts.querySource === 'auto_mode') {
+    logForDebugging(
+      `[sideQuery] auto_mode parentSpan=${_ps ? `id=${(_ps as unknown as Record<string, unknown>).id ?? 'present'}` : 'null/undefined'} querySource=${opts.querySource}`,
+    )
+  }
+  // When parentSpan is provided, create a child span nested under the
+  // main agent trace. For auto_mode queries, we must always nest under
+  // a parent span — never create a standalone root trace (agent type),
+  // as auto_mode observations should appear as spans within the parent.
+  // For other query sources without a parent, create a standalone trace.
+  const langfuseTrace = _ps
+    ? createChildSpan(_ps, {
+        name: traceName,
+        sessionId: getSessionId(),
+        model: normalizedModel,
+        provider,
+        querySource: opts.querySource,
+      })
+    : opts.querySource === 'auto_mode'
+      ? null
+      : createTrace({
+          sessionId: getSessionId(),
+          model: normalizedModel,
+          provider,
+          name: traceName,
+          querySource: opts.querySource,
+        })
+
+  let response: BetaMessage
+  try {
+    response = await client.beta.messages.create(
+      {
+        model: normalizedModel,
+        max_tokens,
+        system: systemBlocks,
+        messages,
+        ...(tools && { tools }),
+        ...(tool_choice && { tool_choice }),
+        ...(output_format && { output_config: { format: output_format } }),
+        ...(temperature !== undefined && { temperature }),
+        ...(stop_sequences && { stop_sequences }),
+        ...(thinkingConfig && { thinking: thinkingConfig }),
+        ...(betas.length > 0 && { betas }),
+        metadata: getAPIMetadata(),
+      },
+      { signal },
+    )
+  } catch (error) {
+    endTrace(langfuseTrace, { error: errorMessage(error) }, opts.optional ? 'interrupted' : 'error')
+    throw error
+  }
 
   const requestId =
     (response as { _request_id?: string | null })._request_id ?? undefined
@@ -239,215 +270,38 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
   })
   setLastApiCompletionTimestamp(now)
 
+  // Record LLM observation in Langfuse (no-op if not configured).
+  // Wrap SDK types into the internal message format expected by converters.
+  const wrappedInput = messages.map(m => ({
+    type: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+    message: { role: m.role, content: m.content },
+  })) as unknown as Parameters<typeof convertMessagesToLangfuse>[0]
+  const wrappedOutput = [{
+    type: 'assistant' as const,
+    message: { role: 'assistant' as const, content: response.content },
+  }] as unknown as Parameters<typeof convertOutputToLangfuse>[0]
+  recordLLMObservation(langfuseTrace, {
+    model: normalizedModel,
+    provider,
+    input: convertMessagesToLangfuse(wrappedInput, systemBlocks.length > 0 ? systemBlocks.map(b => b.text) : undefined),
+    output: convertOutputToLangfuse(wrappedOutput),
+    usage: {
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+      cache_creation_input_tokens: response.usage.cache_creation_input_tokens ?? undefined,
+      cache_read_input_tokens: response.usage.cache_read_input_tokens ?? undefined,
+    },
+    startTime: new Date(start),
+    endTime: new Date(),
+    ...(tools && { tools: convertToolsToLangfuse(tools as unknown[]) }),
+    ...(thinkingConfig && thinkingConfig.type !== 'disabled' && {
+      thinking: {
+        type: thinkingConfig.type,
+        ...(thinkingConfig.type === 'enabled' && { budgetTokens: thinkingConfig.budget_tokens }),
+      },
+    }),
+  })
+  endTrace(langfuseTrace)
+
   return response
-}
-
-/**
- * CoStrict provider implementation for sideQuery
- */
-async function sideQueryCoStrict(opts: SideQueryOptions): Promise<BetaMessage> {
-  const {
-    model,
-    system,
-    messages,
-    max_tokens = 1024,
-    signal,
-    skipSystemPromptPrefix,
-    temperature,
-    output_format,
-  } = opts
-
-  // Build system prompt
-  const systemContent = skipSystemPromptPrefix
-    ? typeof system === 'string'
-      ? system
-      : ''
-    : `${getCLISyspromptPrefix({ isNonInteractive: false, hasAppendSystemPrompt: false })}
-${typeof system === 'string' ? system : ''}`
-
-  // Resolve model and get base URL
-  const costrictModel = resolveCoStrictModel(model)
-  const creds = await loadCoStrictCredentials()
-  const baseUrl = getCoStrictBaseURL(creds?.base_url)
-  const chatBaseURL = `${baseUrl}/chat-rag/api/v1`
-
-  // Create OpenAI client with CoStrict custom fetch
-  const costrictFetch = createCoStrictFetch()
-  const client = new OpenAI({
-    apiKey: 'costrict-managed',
-    baseURL: chatBaseURL,
-    maxRetries: 0,
-    timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
-    dangerouslyAllowBrowser: true,
-    fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as any,
-    fetch: costrictFetch as any,
-  })
-
-  // Convert messages to OpenAI format
-  const openaiMessages = anthropicMessagesToOpenAI(
-    messages as unknown as (UserMessage | AssistantMessage)[],
-    asSystemPrompt([systemContent]),
-    { enableThinking: false },
-  )
-
-  // Build request
-  const requestBody: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-    model: costrictModel,
-    messages: openaiMessages,
-    max_tokens: max_tokens,
-    ...(temperature !== undefined && { temperature }),
-  }
-
-  // Add response_format for JSON schema if specified
-  if (output_format?.type === 'json_schema') {
-    ;(requestBody as any).response_format = {
-      type: 'json_schema',
-      json_schema: {
-        name: 'response',
-        schema: output_format.schema,
-        strict: true,
-      },
-    }
-  }
-
-  const start = Date.now()
-  const response = await client.chat.completions.create(requestBody, { signal })
-
-  // Convert OpenAI response to Anthropic BetaMessage format
-  const choice = response.choices[0]
-  const content = choice?.message?.content || ''
-
-  const betaMessage: BetaMessage = {
-    id: response.id,
-    type: 'message',
-    role: 'assistant',
-    model: costrictModel,
-    content: [{ type: 'text', text: content }],
-    stop_reason: choice?.finish_reason === 'stop' ? 'end_turn' : 'max_tokens',
-    usage: {
-      input_tokens: response.usage?.prompt_tokens || 0,
-      output_tokens: response.usage?.completion_tokens || 0,
-    },
-  } as BetaMessage
-
-  // Log analytics
-  const now = Date.now()
-  const lastCompletion = getLastApiCompletionTimestamp()
-  logEvent('tengu_api_success', {
-    requestId:
-      response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    querySource:
-      opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    model:
-      costrictModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    inputTokens: response.usage?.prompt_tokens || 0,
-    outputTokens: response.usage?.completion_tokens || 0,
-    cachedInputTokens: 0,
-    uncachedInputTokens: 0,
-    durationMsIncludingRetries: now - start,
-    timeSinceLastApiCallMs:
-      lastCompletion !== null ? now - lastCompletion : undefined,
-  })
-  setLastApiCompletionTimestamp(now)
-
-  return betaMessage
-}
-
-/**
- * OpenAI provider implementation for sideQuery
- */
-async function sideQueryOpenAI(opts: SideQueryOptions): Promise<BetaMessage> {
-  const {
-    model,
-    system,
-    messages,
-    max_tokens = 1024,
-    signal,
-    skipSystemPromptPrefix,
-    temperature,
-    output_format,
-  } = opts
-
-  // Build system prompt
-  const systemContent = skipSystemPromptPrefix
-    ? typeof system === 'string'
-      ? system
-      : ''
-    : `${getCLISyspromptPrefix({ isNonInteractive: false, hasAppendSystemPrompt: false })}
-${typeof system === 'string' ? system : ''}`
-
-  // Resolve model
-  const openaiModel = resolveOpenAIModel(model)
-
-  // Get OpenAI client
-  const client = getOpenAIClient({ maxRetries: 0, source: 'side_query' })
-
-  // Convert messages to OpenAI format
-  const openaiMessages = anthropicMessagesToOpenAI(
-    messages as unknown as (UserMessage | AssistantMessage)[],
-    asSystemPrompt([systemContent]),
-    { enableThinking: false },
-  )
-
-  // Build request
-  const requestBody: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-    model: openaiModel,
-    messages: openaiMessages,
-    max_tokens: max_tokens,
-    ...(temperature !== undefined && { temperature }),
-  }
-
-  // Add response_format for JSON schema if specified
-  if (output_format?.type === 'json_schema') {
-    ;(requestBody as any).response_format = {
-      type: 'json_schema',
-      json_schema: {
-        name: 'response',
-        schema: output_format.schema,
-        strict: true,
-      },
-    }
-  }
-
-  const start = Date.now()
-  const response = await client.chat.completions.create(requestBody, { signal })
-
-  // Convert OpenAI response to Anthropic BetaMessage format
-  const choice = response.choices[0]
-  const content = choice?.message?.content || ''
-
-  const betaMessage: BetaMessage = {
-    id: response.id,
-    type: 'message',
-    role: 'assistant',
-    model: openaiModel,
-    content: [{ type: 'text', text: content }],
-    stop_reason: choice?.finish_reason === 'stop' ? 'end_turn' : 'max_tokens',
-    usage: {
-      input_tokens: response.usage?.prompt_tokens || 0,
-      output_tokens: response.usage?.completion_tokens || 0,
-    },
-  } as BetaMessage
-
-  // Log analytics
-  const now = Date.now()
-  const lastCompletion = getLastApiCompletionTimestamp()
-  logEvent('tengu_api_success', {
-    requestId:
-      response.id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    querySource:
-      opts.querySource as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    model:
-      openaiModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    inputTokens: response.usage?.prompt_tokens || 0,
-    outputTokens: response.usage?.completion_tokens || 0,
-    cachedInputTokens: 0,
-    uncachedInputTokens: 0,
-    durationMsIncludingRetries: now - start,
-    timeSinceLastApiCallMs:
-      lastCompletion !== null ? now - lastCompletion : undefined,
-  })
-  setLastApiCompletionTimestamp(now)
-
-  return betaMessage
 }

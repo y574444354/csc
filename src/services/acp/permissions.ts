@@ -22,15 +22,8 @@ import type {
 } from '../../types/permissions.js'
 import type { Tool as ToolType, ToolUseContext } from '../../Tool.js'
 import type { AssistantMessage } from '../../types/message.js'
+import { hasPermissionsToUseTool } from '../../utils/permissions/permissions.js'
 import { toolInfoFromToolUse } from './bridge.js'
-
-const IS_ROOT =
-  typeof process.geteuid === 'function'
-    ? process.geteuid() === 0
-    : typeof process.getuid === 'function'
-      ? process.getuid() === 0
-      : false
-const ALLOW_BYPASS = !IS_ROOT || !!process.env.IS_SANDBOX
 
 /**
  * Creates a CanUseToolFn that delegates permission decisions to the
@@ -42,31 +35,62 @@ export function createAcpCanUseTool(
   getCurrentMode: () => string,
   clientCapabilities?: ClientCapabilities,
   cwd?: string,
+  onModeChange?: (modeId: string) => void,
+  isBypassModeAvailable?: () => boolean,
 ): CanUseToolFn {
   return async (
     tool: ToolType,
     input: Record<string, unknown>,
-    _context: ToolUseContext,
-    _assistantMessage: AssistantMessage,
+    context: ToolUseContext,
+    assistantMessage: AssistantMessage,
     toolUseID: string,
-    _forceDecision?: PermissionAllowDecision | PermissionAskDecision | PermissionDenyDecision,
+    forceDecision?: PermissionAllowDecision | PermissionAskDecision | PermissionDenyDecision,
   ): Promise<PermissionAllowDecision | PermissionAskDecision | PermissionDenyDecision> => {
     const supportsTerminalOutput = checkTerminalOutput(clientCapabilities)
 
     // ── ExitPlanMode special handling ────────────────────────────
     if (tool.name === 'ExitPlanMode') {
-      return handleExitPlanMode(conn, sessionId, toolUseID, input, supportsTerminalOutput, cwd)
+      return handleExitPlanMode(
+        conn, sessionId, toolUseID, input, supportsTerminalOutput, cwd, onModeChange,
+        isBypassModeAvailable,
+      )
     }
 
-    // ── bypassPermissions mode ───────────────────────────────────
-    if (getCurrentMode() === 'bypassPermissions') {
+    // ── Force decision bypass (used by coordinator/swarm workers) ──
+    if (forceDecision !== undefined) {
+      return forceDecision
+    }
+
+    // ── Run through the normal permission pipeline ────────────────
+    // This handles: deny rules, allow rules, tool-specific checks,
+    // bypassPermissions mode, dontAsk mode, acceptEdits mode, auto mode classifier
+    try {
+      const pipelineResult = await hasPermissionsToUseTool(
+        tool, input, context, assistantMessage, toolUseID,
+      )
+
+      // If the pipeline resolved to allow or deny, return that
+      if (pipelineResult.behavior === 'allow') {
+        return pipelineResult as PermissionAllowDecision
+      }
+      if (pipelineResult.behavior === 'deny') {
+        return pipelineResult as PermissionDenyDecision
+      }
+      // behavior === 'ask' → fall through to client delegation
+    } catch (err) {
+      console.error('[ACP Permissions] Pipeline error:', err)
       return {
-        behavior: 'allow',
-        updatedInput: input,
+        behavior: 'deny',
+        message: 'Permission pipeline failed',
+        decisionReason: {
+          type: 'other',
+          reason: 'Permission pipeline failed',
+        },
+        toolUseID,
       }
     }
 
-    // ── Standard tool permission ─────────────────────────────────
+    // ── Delegate to ACP client for interactive permission decision ──
     const info = toolInfoFromToolUse(
       { name: tool.name, id: toolUseID, input },
       supportsTerminalOutput,
@@ -122,7 +146,8 @@ export function createAcpCanUseTool(
         message: 'Permission denied by client',
         decisionReason: { type: 'mode', mode: 'default' },
       }
-    } catch {
+    } catch (err) {
+      console.error('[ACP Permissions] Client request error:', err)
       return {
         behavior: 'deny',
         message: 'Permission request failed',
@@ -139,6 +164,8 @@ async function handleExitPlanMode(
   input: Record<string, unknown>,
   supportsTerminalOutput: boolean,
   cwd?: string,
+  onModeChange?: (modeId: string) => void,
+  isBypassModeAvailable?: () => boolean,
 ): Promise<PermissionAllowDecision | PermissionDenyDecision> {
   const options: Array<PermissionOption> = [
     { kind: 'allow_always', name: 'Yes, and use "auto" mode', optionId: 'auto' },
@@ -146,7 +173,7 @@ async function handleExitPlanMode(
     { kind: 'allow_once', name: 'Yes, and manually approve edits', optionId: 'default' },
     { kind: 'reject_once', name: 'No, keep planning', optionId: 'plan' },
   ]
-  if (ALLOW_BYPASS) {
+  if (isBypassModeAvailable?.() === true) {
     options.unshift({
       kind: 'allow_always',
       name: 'Yes, and bypass permissions',
@@ -188,12 +215,19 @@ async function handleExitPlanMode(
     response.outcome.optionId !== undefined
   ) {
     const selectedOption = response.outcome.optionId
+    const isOfferedOption = options.some(option => option.optionId === selectedOption)
     if (
-      selectedOption === 'default' ||
-      selectedOption === 'acceptEdits' ||
-      selectedOption === 'auto' ||
-      selectedOption === 'bypassPermissions'
+      isOfferedOption &&
+      (
+        selectedOption === 'default' ||
+        selectedOption === 'acceptEdits' ||
+        selectedOption === 'auto' ||
+        selectedOption === 'bypassPermissions'
+      )
     ) {
+      // Sync mode to session state and appState
+      onModeChange?.(selectedOption)
+
       await conn.sessionUpdate({
         sessionId,
         update: {

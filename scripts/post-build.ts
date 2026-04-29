@@ -4,8 +4,7 @@
  *
  * 1. Patch globalThis.Bun destructuring in third-party deps for Node.js compat
  * 2. Copy native addon files
- * 3. Bundle standalone scripts (download-ripgrep)
- * 4. Generate dual entry points (cli-bun.js, cli-node.js)
+ * 3. Generate dual entry points (cli-bun.js, cli-node.js)
  */
 import { readdir, readFile, writeFile, cp } from "node:fs/promises";
 import { chmodSync } from "node:fs";
@@ -37,39 +36,15 @@ async function postBuild() {
   }
 
   // Step 2: Copy native addon files
-  const vendorDir = join(outdir, "vendor", "audio-capture");
-  await cp("vendor/audio-capture", vendorDir, { recursive: true } as never);
-  console.log(`Copied vendor/audio-capture/ → ${vendorDir}/`);
+  const audioCaptureDir = join(outdir, "vendor", "audio-capture");
+  await cp("vendor/audio-capture", audioCaptureDir, { recursive: true } as never);
+  console.log(`Copied vendor/audio-capture/ → ${audioCaptureDir}/`);
 
-  // Step 3: Bundle standalone scripts via Bun.build (kept for simplicity)
-  try {
-    const { default: Bun } = await import("bun");
-    const rgScript = await Bun.build({
-      entrypoints: ["scripts/download-ripgrep.ts"],
-      outdir,
-      target: "node",
-    });
-    if (rgScript.success) {
-      console.log(`Bundled download-ripgrep script to ${outdir}/`);
-    } else {
-      console.warn("Failed to bundle download-ripgrep script (non-fatal)");
-    }
-  } catch {
-    // Bun not available — try esbuild fallback
-    try {
-      execSync(
-        `npx esbuild scripts/download-ripgrep.ts --bundle --platform=node --outfile=${outdir}/download-ripgrep.js --format=esm`,
-        { stdio: "inherit" },
-      );
-      console.log(`Bundled download-ripgrep script via esbuild to ${outdir}/`);
-    } catch {
-      console.warn(
-        "Failed to bundle download-ripgrep script — skipping (non-fatal)",
-      );
-    }
-  }
+  const ripgrepDir = join(outdir, "vendor", "ripgrep");
+  await cp("src/utils/vendor/ripgrep", ripgrepDir, { recursive: true } as never);
+  console.log(`Copied src/utils/vendor/ripgrep/ → ${ripgrepDir}/`);
 
-  // Step 4: Generate dual entry points
+  // Step 3: Generate dual entry points
   const cliBun = join(outdir, "cli-bun.js");
   const cliNode = join(outdir, "cli-node.js");
 

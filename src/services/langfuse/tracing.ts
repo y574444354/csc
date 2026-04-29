@@ -78,6 +78,16 @@ export function recordLLMObservation(
     endTime?: Date
     completionStartTime?: Date
     tools?: unknown
+    /** Thinking depth configuration used for this request.
+     * Accepts the full API thinking config object. Fields:
+     * - type: thinking mode ("enabled", "adaptive", "disabled")
+     * - budget_tokens (snake_case, from Anthropic API) or budgetTokens (camelCase)
+     */
+    thinking?: {
+      type: string
+      budget_tokens?: number
+      budgetTokens?: number
+    }
   },
 ): void {
   if (!rootSpan || !isLangfuseEnabled()) return
@@ -97,6 +107,7 @@ export function recordLLMObservation(
         metadata: {
           provider: params.provider,
           model: params.model,
+          ...(params.thinking && { thinking: params.thinking }),
         },
         ...(params.completionStartTime && { completionStartTime: params.completionStartTime }),
       },
@@ -278,6 +289,60 @@ export function createSubagentTrace(params: {
     return rootSpan as unknown as LangfuseSpan
   } catch (e) {
     logForDebugging(`[langfuse] createSubagentTrace failed: ${e}`, { level: 'error' })
+    return null
+  }
+}
+
+/**
+ * Create a child span under a parent trace — used for side queries
+ * that should be nested under the main agent trace in Langfuse.
+ */
+export function createChildSpan(
+  parentSpan: LangfuseSpan | null,
+  params: {
+    name: string
+    sessionId: string
+    model: string
+    provider: string
+    input?: unknown
+    querySource?: string
+    username?: string
+  },
+): LangfuseSpan | null {
+  if (!parentSpan || !isLangfuseEnabled()) return null
+  try {
+    const span = startObservation(
+      params.name,
+      {
+        input: params.input,
+        metadata: {
+          provider: params.provider,
+          model: params.model,
+          querySource: params.querySource,
+        },
+      },
+      {
+        asType: 'span',
+        parentSpanContext: parentSpan.otelSpan.spanContext(),
+      },
+    ) as LangfuseSpan
+
+    // Propagate session ID and user ID from parent
+    const parent = parentSpan as unknown as RootTrace
+    const sessionId = parent._sessionId ?? params.sessionId
+    if (sessionId) {
+      span.otelSpan.setAttribute(LangfuseOtelSpanAttributes.TRACE_SESSION_ID, sessionId)
+      ;(span as unknown as RootTrace)._sessionId = sessionId
+    }
+    const userId = parent._userId ?? resolveLangfuseUserId(params.username)
+    if (userId) {
+      span.otelSpan.setAttribute(LangfuseOtelSpanAttributes.TRACE_USER_ID, userId)
+      ;(span as unknown as RootTrace)._userId = userId
+    }
+    logForDebugging(`[langfuse] Child span created: ${span.id} (parent=${parentSpan.id})`)
+    return span
+  } catch (e) {
+    logForDebugging(`[langfuse] createChildSpan failed: ${e}`, { level: 'error' })
     return null
   }
 }

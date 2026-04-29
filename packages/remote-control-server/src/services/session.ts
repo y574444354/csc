@@ -2,15 +2,17 @@ import {
   storeCreateSession,
   storeGetSession,
   storeIsSessionOwner,
+  storeGetSessionOwners,
+  storeBindSession,
   storeUpdateSession,
   storeListSessions,
   storeListSessionsByUsername,
   storeListSessionsByEnvironment,
   storeListSessionsByOwnerUuid,
 } from "../store";
+import { randomUUID } from "node:crypto";
 import { getAllEventBuses, removeEventBus } from "../transport/event-bus";
 import type { CreateSessionRequest, CreateCodeSessionRequest, SessionResponse, SessionSummaryResponse } from "../types/api";
-import { v4 as uuid } from "uuid";
 
 const CODE_SESSION_PREFIX = "cse_";
 const WEB_SESSION_PREFIX = "session_";
@@ -106,6 +108,16 @@ export function resolveOwnedWebSessionId(sessionId: string, uuid: string): strin
     return compatibleCodeSessionId;
   }
 
+  // Auto-bind: if the session exists but has no owner, claim it for the requesting user
+  const existingId = resolveExistingSessionId(sessionId);
+  if (existingId) {
+    const owners = storeGetSessionOwners(existingId);
+    if (!owners || owners.size === 0) {
+      storeBindSession(existingId, uuid);
+      return existingId;
+    }
+  }
+
   return null;
 }
 
@@ -133,7 +145,7 @@ export function updateSessionStatus(sessionId: string, status: string) {
   if (!bus) return;
 
   bus.publish({
-    id: uuid(),
+    id: randomUUID(),
     sessionId,
     type: "session_status",
     payload: { status },

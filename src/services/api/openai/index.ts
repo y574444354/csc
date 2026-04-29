@@ -5,6 +5,7 @@ import type {
   StreamEvent,
   SystemAPIErrorMessage,
   AssistantMessage,
+  UserMessage,
 } from '../../../types/message.js'
 import type { AgentId } from '../../../types/ids.js'
 import type { Tools } from '../../../Tool.js'
@@ -24,23 +25,65 @@ import { logForDebugging } from '../../../utils/debug.js'
 import { addToTotalSessionCost } from '../../../cost-tracker.js'
 import { calculateUSDCost } from '../../../utils/modelCost.js'
 import { isOpenAIThinkingEnabled, resolveOpenAIMaxTokens, buildOpenAIRequestBody } from './requestBody.js'
+import { recordLLMObservation } from '../../../services/langfuse/tracing.js'
+import { convertMessagesToLangfuse, convertOutputToLangfuse, convertToolsToLangfuse } from '../../../services/langfuse/convert.js'
 export { isOpenAIThinkingEnabled, resolveOpenAIMaxTokens, buildOpenAIRequestBody }
 import { getModelMaxOutputTokens } from '../../../utils/context.js'
 import type { Options } from '../claude.js'
 import { randomUUID } from 'crypto'
 import {
   createAssistantAPIErrorMessage,
+  createUserMessage,
   normalizeContentFromAPI,
 } from '../../../utils/messages.js'
 import type { SDKAssistantMessageError } from '../../../entrypoints/agentSdkTypes.js'
 import {
   isToolSearchEnabled,
   extractDiscoveredToolNames,
+  isDeferredToolsDeltaEnabled,
 } from '../../../utils/toolSearch.js'
 import {
+  formatDeferredToolLine,
   isDeferredTool,
   TOOL_SEARCH_TOOL_NAME,
 } from '@claude-code-best/builtin-tools/tools/ToolSearchTool/prompt.js'
+
+/**
+ * Mirrors the Anthropic request path's deferred-tool announcement for OpenAI.
+ *
+ * OpenAI-compatible endpoints cannot consume Anthropic's `defer_loading` or
+ * `tool_reference` beta payloads directly, so the model needs the same textual
+ * list of deferred MCP tool names that Anthropic receives before it can ask
+ * ToolSearchTool to load their full schemas.
+ */
+function prependDeferredToolListIfNeeded(
+  messages: (AssistantMessage | UserMessage)[],
+  tools: Tools,
+  deferredToolNames: Set<string>,
+  useToolSearch: boolean,
+): (AssistantMessage | UserMessage)[] {
+  if (!useToolSearch || isDeferredToolsDeltaEnabled()) return messages
+
+  const deferredToolList = tools
+    .filter(tool => deferredToolNames.has(tool.name))
+    .map(formatDeferredToolLine)
+    .sort()
+    .join('\n')
+
+  if (!deferredToolList) return messages
+
+  return [
+    createUserMessage({
+      content: `<available-deferred-tools>\n${deferredToolList}\n</available-deferred-tools>`,
+      isMeta: true,
+    }),
+    ...messages,
+  ]
+}
+
+function isOpenAIConvertibleMessage(msg: Message): msg is AssistantMessage | UserMessage {
+  return msg.type === 'assistant' || msg.type === 'user'
+}
 
 /**
  * Assemble the final AssistantMessage (and optional max_tokens error) from
@@ -174,9 +217,18 @@ export async function* queryModelOpenAI(
 
     // 8. Convert messages and tools to OpenAI format
     const enableThinking = isOpenAIThinkingEnabled(openaiModel)
-    const openaiMessages = anthropicMessagesToOpenAI(messagesForAPI, systemPrompt, {
-      enableThinking,
-    })
+    const openAIConvertibleMessages = messagesForAPI.filter(isOpenAIConvertibleMessage)
+    const messagesWithDeferredToolList = prependDeferredToolListIfNeeded(
+      openAIConvertibleMessages,
+      tools,
+      deferredToolNames,
+      useToolSearch,
+    )
+    const openaiMessages = anthropicMessagesToOpenAI(
+      messagesWithDeferredToolList,
+      systemPrompt,
+      { enableThinking },
+    )
     const openaiTools = anthropicToolsToOpenAI(standardTools)
     const openaiToolChoice = anthropicToolChoiceToOpenAI(options.toolChoice)
 
@@ -246,6 +298,7 @@ export async function* queryModelOpenAI(
 
     // Accumulate content blocks and usage, same as the Anthropic path in claude.ts
     const contentBlocks: Record<number, any> = {}
+    const collectedMessages: AssistantMessage[] = []
     let partialMessage: any
     let stopReason: string | null = null
     let usage = {
@@ -323,6 +376,9 @@ export async function* queryModelOpenAI(
               partialMessage, contentBlocks, tools, agentId: options.agentId,
               usage, stopReason, maxTokens,
             })) {
+              if (output.type === 'assistant') {
+                collectedMessages.push(output)
+              }
               yield output
             }
             // Reset partialMessage so the post-loop safety fallback does not
@@ -345,6 +401,25 @@ export async function* queryModelOpenAI(
         ...(event.type === 'message_start' ? { ttftMs } : undefined),
       } as StreamEvent
     }
+
+    // Record LLM observation in Langfuse (no-op if not configured)
+    recordLLMObservation(options.langfuseTrace ?? null, {
+      model: openaiModel,
+      provider: 'openai',
+      input: convertMessagesToLangfuse(openaiMessages),
+      output: convertOutputToLangfuse(collectedMessages),
+      usage: {
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens,
+        cache_read_input_tokens: usage.cache_read_input_tokens,
+      },
+      startTime: new Date(start),
+      endTime: new Date(),
+      completionStartTime: ttftMs > 0 ? new Date(start + ttftMs) : undefined,
+      tools: convertToolsToLangfuse(toolSchemas as unknown[]),
+      ...(enableThinking && { thinking: { type: 'enabled' } }),
+    })
 
     // Safety: if stream ended without message_stop, assemble and yield whatever we have
     if (partialMessage) {

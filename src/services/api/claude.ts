@@ -101,6 +101,8 @@ import {
   extractQuotaStatusFromHeaders,
 } from '../claudeAiLimits.js'
 import { getAPIContextManagement } from '../compact/apiMicrocompact.js'
+import { bedrockAdapter } from '../providerUsage/adapters/bedrock.js'
+import { updateProviderBuckets } from '../providerUsage/store.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const autoModeStateModule = feature('TRANSCRIPT_CLASSIFIER')
@@ -122,14 +124,12 @@ import {
   getPromptCache1hAllowlist,
   getPromptCache1hEligible,
   getSessionId,
-  getThinkingClearLatched,
   setAfkModeHeaderLatched,
   setCacheEditingHeaderLatched,
   setFastModeHeaderLatched,
   setLastMainRequestId,
   setPromptCache1hAllowlist,
   setPromptCache1hEligible,
-  setThinkingClearLatched,
 } from 'src/bootstrap/state.js'
 import {
   AFK_MODE_BETA_HEADER,
@@ -541,13 +541,12 @@ export async function verifyApiKey(
           }),
         async anthropic => {
           const messages: MessageParam[] = [{ role: 'user', content: 'test' }]
-          // biome-ignore lint/plugin: API key verification is intentionally a minimal direct call
           await anthropic.beta.messages.create({
             model,
             max_tokens: 1,
             messages,
             temperature: 1,
-            ...(betas.length > 0 && { betas }),
+            ...(betas.length > 0 && { betas: betas.filter(Boolean) }),
             metadata: getAPIMetadata(),
             ...getExtraBodyParams(),
           })
@@ -878,7 +877,6 @@ export async function* executeNonStreamingRequest(
       )
 
       try {
-        // biome-ignore lint/plugin: non-streaming API call
         return await anthropic.beta.messages.create(
           {
             ...adjustedParams,
@@ -1215,10 +1213,15 @@ async function* queryModel(
     cacheEditingBetaHeader = betas.CACHE_EDITING_BETA_HEADER
     const featureEnabled = isCachedMicrocompactEnabled()
     const modelSupported = isModelSupportedForCacheEditing(options.model)
-    cachedMCEnabled = featureEnabled && modelSupported
+    // cachedMC requires a non-empty beta header; the CACHE_EDITING_BETA_HEADER
+    // constant is '' in this fork (upstream hasn't published the real value).
+    // Without it, cache_reference and cache_edits in the request body cause
+    // API 400: "tool_result.cache_reference: Extra inputs are not permitted".
+    const headerAvailable = !!cacheEditingBetaHeader
+    cachedMCEnabled = featureEnabled && modelSupported && headerAvailable
     const config = getCachedMCConfig()
     logForDebugging(
-      `Cached MC gate: enabled=${featureEnabled} modelSupported=${modelSupported} model=${options.model} supportedModels=${jsonStringify((config as any).supportedModels)}`,
+      `Cached MC gate: enabled=${featureEnabled} modelSupported=${modelSupported} headerAvailable=${headerAvailable} model=${options.model} supportedModels=${jsonStringify((config as Record<string, unknown>).supportedModels)}`,
     )
   }
 
@@ -1337,7 +1340,10 @@ async function* queryModel(
   // media stripping) but before Anthropic-specific logic (betas, thinking, caching).
   if (getAPIProvider() === 'openai') {
     const { queryModelOpenAI } = await import('./openai/index.js')
-    yield* queryModelOpenAI(messagesForAPI, systemPrompt, filteredTools, signal, options)
+    // OpenAI emulates Anthropic's dynamic tool loading client-side. It needs
+    // the full tool pool so ToolSearchTool can search deferred MCP tools that
+    // were intentionally filtered out of the initial API tool list above.
+    yield* queryModelOpenAI(messagesForAPI, systemPrompt, tools, signal, options)
     return
   }
 
@@ -1493,20 +1499,6 @@ async function* queryModel(
     }
   }
 
-  // Only latch from agentic queries so a classifier call doesn't flip the
-  // main thread's context_management mid-turn.
-  let thinkingClearLatched = getThinkingClearLatched() === true
-  if (!thinkingClearLatched && isAgenticQuery) {
-    const lastCompletion = getLastApiCompletionTimestamp()
-    if (
-      lastCompletion !== null &&
-      Date.now() - lastCompletion > CACHE_TTL_1HOUR_MS
-    ) {
-      thinkingClearLatched = true
-      setThinkingClearLatched(true)
-    }
-  }
-
   const effort = resolveAppliedEffort(options.model, options.effortValue)
 
   if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
@@ -1558,11 +1550,11 @@ async function* queryModel(
   let start = Date.now()
   let attemptNumber = 0
   const attemptStartTimes: number[] = []
-  let stream: Stream<BetaRawMessageStreamEvent> | undefined = undefined
-  let streamRequestId: string | null | undefined = undefined
-  let clientRequestId: string | undefined = undefined
+  let stream: Stream<BetaRawMessageStreamEvent> | undefined
+  let streamRequestId: string | null | undefined
+  let clientRequestId: string | undefined
   // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins -- Response is available in Node 18+ and is used by the SDK
-  let streamResponse: Response | undefined = undefined
+  let streamResponse: Response | undefined
 
   // Release all stream resources to prevent native memory leaks.
   // The Response object holds native TLS/socket buffers that live outside the
@@ -1648,7 +1640,7 @@ async function* queryModel(
     const hasThinking =
       thinkingConfig.type !== 'disabled' &&
       !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_THINKING)
-    let thinking: BetaMessageStreamParams['thinking'] | undefined = undefined
+    let thinking: BetaMessageStreamParams['thinking'] | undefined
 
     // IMPORTANT: Do not change the adaptive-vs-budget thinking selection below
     // without notifying the model launch DRI and research. This is a sensitive
@@ -1685,7 +1677,7 @@ async function* queryModel(
     const contextManagement = getAPIContextManagement({
       hasThinking,
       isRedactThinkingActive: betasParams.includes(REDACT_THINKING_BETA_HEADER),
-      clearAllThinking: thinkingClearLatched,
+      clearAllThinking: false,
     })
 
     const enablePromptCaching =
@@ -1730,6 +1722,7 @@ async function* queryModel(
       options.querySource === 'repl_main_thread'
     if (
       cacheEditingHeaderLatched &&
+      cacheEditingBetaHeader &&
       getAPIProvider() === 'firstParty' &&
       options.querySource === 'repl_main_thread' &&
       !betasParams.includes(cacheEditingBetaHeader)
@@ -1746,7 +1739,12 @@ async function* queryModel(
       ? (options.temperatureOverride ?? 1)
       : undefined
 
-    lastRequestBetas = betasParams
+    // Filter out any empty-string beta headers before sending.
+    // Constants like CACHE_EDITING_BETA_HEADER or AFK_MODE_BETA_HEADER
+    // can be '' when their feature gate is off; an empty string in the
+    // betas array produces an invalid anthropic-beta header (400 error).
+    const filteredBetas = betasParams.filter(Boolean)
+    lastRequestBetas = filteredBetas
 
     return {
       model: normalizeModelStringForAPI(options.model),
@@ -1762,7 +1760,7 @@ async function* queryModel(
       system,
       tools: allTools,
       tool_choice: options.toolChoice,
-      ...(useBetas && { betas: betasParams }),
+      ...(useBetas && { betas: filteredBetas }),
       metadata: getAPIMetadata(),
       max_tokens: maxOutputTokens,
       thinking,
@@ -1784,6 +1782,10 @@ async function* queryModel(
   // captures only primitives instead of paramsFromContext's full closure scope
   // (messagesForAPI, system, allTools, betas — the entire request-building
   // context), which would otherwise be pinned until the promise resolves.
+  // Also capture thinking params for Langfuse observability.
+  // Pass the entire thinking config object so all fields (type, budget_tokens,
+  // and any future additions) flow through without cherry-picking.
+  let langfuseThinking: BetaMessageStreamParams['thinking'] | undefined
   {
     const queryParams = paramsFromContext({
       model: options.model,
@@ -1791,8 +1793,10 @@ async function* queryModel(
     })
     const logMessagesLength = queryParams.messages.length
     const logBetas = useBetas ? (queryParams.betas ?? []) : []
-    const logThinkingType = queryParams.thinking?.type ?? 'disabled'
     const logEffortValue = queryParams.output_config?.effort
+    if (queryParams.thinking && queryParams.thinking.type !== 'disabled') {
+      langfuseThinking = queryParams.thinking
+    }
     void options.getToolPermissionContext().then(permissionContext => {
       logAPIQuery({
         model: options.model,
@@ -1802,7 +1806,7 @@ async function* queryModel(
         permissionMode: permissionContext.mode,
         querySource: options.querySource,
         queryTracking: options.queryTracking,
-        thinkingType: logThinkingType,
+        thinkingConfig,
         effortValue: logEffortValue,
         fastMode: isFastMode,
         previousRequestId,
@@ -1812,7 +1816,7 @@ async function* queryModel(
 
   const newMessages: AssistantMessage[] = []
   let ttftMs = 0
-  let partialMessage: BetaMessage | undefined = undefined
+  let partialMessage: BetaMessage | undefined
   const contentBlocks: (BetaContentBlock | ConnectorTextBlock)[] = []
   let usage: NonNullableUsage = EMPTY_USAGE
   let costUSD = 0
@@ -1820,8 +1824,8 @@ async function* queryModel(
   let didFallBackToNonStreaming = false
   let fallbackMessage: AssistantMessage | undefined
   let maxOutputTokens = 0
-  let responseHeaders: globalThis.Headers | undefined = undefined
-  let research: unknown = undefined
+  let responseHeaders: globalThis.Headers | undefined
+  let research: unknown
   let isFastModeRequest = isFastMode // Keep separate state as it may change if falling back
   let isAdvisorInProgress = false
 
@@ -1870,7 +1874,6 @@ async function* queryModel(
         // Use raw stream instead of BetaMessageStream to avoid O(n²) partial JSON parsing
         // BetaMessageStream calls partialParse() on every input_json_delta, which we don't need
         // since we handle tool input accumulation ourselves
-        // biome-ignore lint/plugin: main conversation loop handles attribution separately
         const result = await anthropic.beta.messages
           .create(
             { ...params, stream: true },
@@ -2244,6 +2247,7 @@ async function* queryModel(
             const m: AssistantMessage = {
               message: {
                 ...partialMessage,
+                usage: partialMessage.usage ?? { ...EMPTY_USAGE },
                 content: normalizeContentFromAPI(
                   [contentBlock] as BetaContentBlock[],
                   tools,
@@ -2450,6 +2454,16 @@ async function* queryModel(
       const resp = streamResponse as unknown as Response | undefined
       if (resp) {
         extractQuotaStatusFromHeaders(resp.headers)
+        // Non-Anthropic providers that flow through this same client path
+        // (Bedrock) expose their own throttle headers — let their adapter
+        // overwrite the store with its bucket(s). Anthropic's adapter runs
+        // inside extractQuotaStatusFromHeaders.
+        if (getAPIProvider() === 'bedrock') {
+          updateProviderBuckets(
+            'bedrock',
+            bedrockAdapter.parseHeaders(resp.headers),
+          )
+        }
         // Store headers for gateway detection
         responseHeaders = resp.headers
       }
@@ -2543,6 +2557,9 @@ async function* queryModel(
           maxOutputTokens,
           thinkingType:
             thinkingConfig.type as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          ...(thinkingConfig.type === 'enabled' && {
+            thinkingBudgetTokens: thinkingConfig.budgetTokens,
+          }),
           fallback_disabled: true,
           request_id: (streamRequestId ??
             'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -2575,6 +2592,9 @@ async function* queryModel(
         maxOutputTokens,
         thinkingType:
           thinkingConfig.type as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        ...(thinkingConfig.type === 'enabled' && {
+          thinkingBudgetTokens: thinkingConfig.budgetTokens,
+        }),
         fallback_disabled: false,
         request_id: (streamRequestId ??
           'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -2691,6 +2711,9 @@ async function* queryModel(
         maxOutputTokens,
         thinkingType:
           thinkingConfig.type as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        ...(thinkingConfig.type === 'enabled' && {
+          thinkingBudgetTokens: thinkingConfig.budgetTokens,
+        }),
         request_id:
           failedRequestId as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         fallback_cause:
@@ -2923,6 +2946,7 @@ async function* queryModel(
     endTime: new Date(),
     completionStartTime: ttftMs > 0 ? new Date(start + ttftMs) : undefined,
     tools: convertToolsToLangfuse(toolSchemas as unknown[]),
+    thinking: langfuseThinking,
   })
 
   void options.getToolPermissionContext().then(permissionContext => {
@@ -3234,6 +3258,7 @@ export function addCacheBreakpoints(
 
   // Add cache_reference to tool_result blocks that are within the cached prefix.
   // Must be done AFTER cache_edits insertion since that modifies content arrays.
+  // Note: this code only runs when useCachedMC=true (early return at line ~3202).
   if (enablePromptCaching) {
     // Find the last message containing a cache_control marker
     let lastCCMsg = -1

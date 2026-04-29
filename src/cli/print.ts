@@ -2763,13 +2763,37 @@ function runHeadlessStreaming(
   // when a message arrives via the UDS socket in headless mode.
   if (feature('UDS_INBOX')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { setOnEnqueue } = require('../utils/udsMessaging.js')
+    const { drainInbox, setOnEnqueue } =
+      require('../utils/udsMessaging.js') as typeof import('../utils/udsMessaging.js')
     /* eslint-enable @typescript-eslint/no-require-imports */
+
+    const enqueueUdsInboxMessages = (): boolean => {
+      const entries = drainInbox()
+      for (const entry of entries) {
+        const value =
+          typeof entry.message.data === 'string'
+            ? entry.message.data
+            : jsonStringify(entry.message.data)
+        enqueue({
+          mode: 'prompt',
+          value,
+          uuid: randomUUID(),
+        })
+      }
+      return entries.length > 0
+    }
+
     setOnEnqueue(() => {
       if (!inputClosed) {
-        void run()
+        if (enqueueUdsInboxMessages()) {
+          void run()
+        }
       }
     })
+
+    if (enqueueUdsInboxMessages()) {
+      void run()
+    }
   }
 
   // Cron scheduler: runs scheduled_tasks.json tasks in SDK/-p mode.
@@ -4948,7 +4972,7 @@ function handleChannelEnable(
 function reregisterChannelHandlerAfterReconnect(
   connection: MCPServerConnection,
 ): void {
-  if (!(feature('KAIROS') || feature('KAIROS_CHANNELS'))) return
+  // Channels always available — feature flag guard removed
   if (connection.type !== 'connected') return
 
   const gate = gateChannelServer(

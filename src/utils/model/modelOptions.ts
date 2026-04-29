@@ -1,4 +1,5 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
+import { getInitialMainLoopModel } from '../../bootstrap/state.js'
 import {
   isClaudeAISubscriber,
   isMaxSubscriber,
@@ -24,8 +25,9 @@ import {
   getDefaultHaikuModel,
   getDefaultMainLoopModelSetting,
   getMarketingNameForModel,
+  getUserSpecifiedModelSetting,
   isOpus1mMergeEnabled,
-  getOpus46PricingSuffix,
+  getOpusPricingSuffix,
   renderDefaultModelSetting,
   type ModelSetting,
 } from './model.js'
@@ -165,13 +167,27 @@ function getOpus41Option(): ModelOption {
   }
 }
 
-function getOpus46Option(fastMode = false): ModelOption {
+function getOpus47Option(fastMode = false): ModelOption {
   const is3P = getAPIProvider() !== 'firstParty'
   return {
-    value: is3P ? getModelStrings().opus46 : 'opus',
-    label: 'Opus',
-    description: `Opus 4.6 · Most capable for complex work${getOpus46PricingSuffix(fastMode)}`,
-    descriptionForModel: 'Opus 4.6 - most capable for complex work',
+    value: is3P ? getModelStrings().opus47 : 'opus',
+    label: 'Opus 4.7',
+    description: `Opus 4.7 · Most capable for complex work${getOpusPricingSuffix(fastMode)}`,
+    descriptionForModel: 'Opus 4.7 - most capable for complex work',
+  }
+}
+
+export function getOpus46Option(fastMode = false): ModelOption {
+  // Always use the canonical 4.6 model string (not the 'opus' alias, which
+  // resolves via getDefaultOpusModel() to opus47 on firstParty). Users
+  // selecting "Opus 4.6" must get 4.6 actually dispatched, not alias-routed
+  // to 4.7. The same string is correct for 3P (getModelStrings maps per
+  // provider).
+  return {
+    value: getModelStrings().opus46,
+    label: 'Opus 4.6',
+    description: `Opus 4.6 · Previous generation Opus${getOpusPricingSuffix(fastMode)}`,
+    descriptionForModel: 'Opus 4.6 - previous generation Opus model',
   }
 }
 
@@ -186,12 +202,22 @@ export function getSonnet46_1MOption(): ModelOption {
   }
 }
 
-export function getOpus46_1MOption(fastMode = false): ModelOption {
+export function getOpus47_1MOption(fastMode = false): ModelOption {
   const is3P = getAPIProvider() !== 'firstParty'
   return {
-    value: is3P ? getModelStrings().opus46 + '[1m]' : 'opus[1m]',
-    label: 'Opus (1M context)',
-    description: `Opus 4.6 for long sessions${getOpus46PricingSuffix(fastMode)}`,
+    value: is3P ? getModelStrings().opus47 + '[1m]' : 'opus[1m]',
+    label: 'Opus 4.7 (1M context)',
+    description: `Opus 4.7 with 1M context${getOpusPricingSuffix(fastMode)}`,
+    descriptionForModel:
+      'Opus 4.7 with 1M context window - for long sessions with large codebases',
+  }
+}
+
+export function getOpus46_1MOption(fastMode = false): ModelOption {
+  return {
+    value: getModelStrings().opus46 + '[1m]',
+    label: 'Opus 4.6 (1M context)',
+    description: `Opus 4.6 with 1M context${getOpusPricingSuffix(fastMode)}`,
     descriptionForModel:
       'Opus 4.6 with 1M context window - for long sessions with large codebases',
   }
@@ -264,8 +290,8 @@ function getHaikuOption(): ModelOption {
 function getMaxOpusOption(fastMode = false): ModelOption {
   return {
     value: 'opus',
-    label: 'Opus',
-    description: `Opus 4.6 · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`,
+    label: 'Opus 4.7',
+    description: `Opus 4.7 · Most capable for complex work${fastMode ? getOpusPricingSuffix(true) : ''}`,
   }
 }
 
@@ -279,23 +305,23 @@ export function getMaxSonnet46_1MOption(): ModelOption {
   }
 }
 
-export function getMaxOpus46_1MOption(fastMode = false): ModelOption {
+export function getMaxOpus47_1MOption(fastMode = false): ModelOption {
   const billingInfo = isClaudeAISubscriber() ? ' · Billed as extra usage' : ''
   return {
     value: 'opus[1m]',
-    label: 'Opus (1M context)',
-    description: `Opus 4.6 with 1M context${billingInfo}${getOpus46PricingSuffix(fastMode)}`,
+    label: 'Opus 4.7 (1M context)',
+    description: `Opus 4.7 with 1M context${billingInfo}${getOpusPricingSuffix(fastMode)}`,
   }
 }
 
 function getMergedOpus1MOption(fastMode = false): ModelOption {
   const is3P = getAPIProvider() !== 'firstParty'
   return {
-    value: is3P ? getModelStrings().opus46 + '[1m]' : 'opus[1m]',
-    label: 'Opus (1M context)',
-    description: `Opus 4.6 with 1M context · Most capable for complex work${!is3P && fastMode ? getOpus46PricingSuffix(fastMode) : ''}`,
+    value: is3P ? getModelStrings().opus47 + '[1m]' : 'opus[1m]',
+    label: 'Opus 4.7 (1M context)',
+    description: `Opus 4.7 with 1M context · Most capable for complex work${!is3P && fastMode ? getOpusPricingSuffix(fastMode) : ''}`,
     descriptionForModel:
-      'Opus 4.6 with 1M context - most capable for complex work',
+      'Opus 4.7 with 1M context - most capable for complex work',
   }
 }
 
@@ -315,7 +341,7 @@ function getOpusPlanOption(): ModelOption {
   return {
     value: 'opusplan',
     label: 'Opus Plan Mode',
-    description: 'Use Opus 4.6 in plan mode, Sonnet 4.6 otherwise',
+    description: 'Use Opus 4.7 in plan mode, Sonnet 4.6 otherwise',
   }
 }
 
@@ -342,11 +368,9 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
 
   if (isClaudeAISubscriber()) {
     if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
-      // Max and Team Premium users: Opus is default, show Sonnet as alternative
+      // Max and Team Premium users: Default = Opus 4.7 1M (merged), plus Opus 4.6 1M
       const premiumOptions = [getDefaultOptionForUser(fastMode)]
-      if (!isOpus1mMergeEnabled() && checkOpus1mAccess()) {
-        premiumOptions.push(getMaxOpus46_1MOption(fastMode))
-      }
+      premiumOptions.push(getOpus46_1MOption(fastMode))
 
       premiumOptions.push(MaxSonnet46Option)
       if (checkSonnet1mAccess()) {
@@ -357,79 +381,75 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
       return premiumOptions
     }
 
-    // Pro/Team Standard/Enterprise users: Sonnet is default, show Opus as alternative
+    // Pro/Team Standard/Enterprise users: Sonnet is default, show Opus 4.7 1M + Opus 4.6 1M
     const standardOptions = [getDefaultOptionForUser(fastMode)]
-    if (checkSonnet1mAccess()) {
-      standardOptions.push(getMaxSonnet46_1MOption())
-    }
 
     if (isOpus1mMergeEnabled()) {
       standardOptions.push(getMergedOpus1MOption(fastMode))
     } else {
       standardOptions.push(getMaxOpusOption(fastMode))
       if (checkOpus1mAccess()) {
-        standardOptions.push(getMaxOpus46_1MOption(fastMode))
+        standardOptions.push(getMaxOpus47_1MOption(fastMode))
       }
+    }
+    standardOptions.push(getOpus46_1MOption(fastMode))
+
+    if (checkSonnet1mAccess()) {
+      standardOptions.push(getMaxSonnet46_1MOption())
     }
 
     standardOptions.push(MaxHaiku45Option)
     return standardOptions
   }
 
-  // CoStrict provider: 从缓存中动态展示 CoStrict 可用模型
-  const isCoStrictProvider = getAPIProvider() === 'costrict'
-  if (isCoStrictProvider) {
-    // 延迟 require 避免循环依赖，且该模块只在 costrict provider 下加载
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCachedCoStrictModels } =
-      require('../../costrict/provider/models.js') as typeof import('../../costrict/provider/models.js')
-    const cachedModels = getCachedCoStrictModels()
-    if (cachedModels.length > 0) {
-      const sorted = [...cachedModels].sort((a, b) => a.id.localeCompare(b.id))
-      return sorted.map(m => {
-        const description =
-          m.id === 'Auto'
-            ? `${Math.round((m.creditDiscount ?? 0) * 100)}% discount`
-            : `${m.creditConsumption ?? '?'}x credit`
-        return {
-          value: m.id,
-          label: m.id,
-          description,
-        }
-      })
+  // PAYG 1P API: Default (Sonnet) + Opus 4.7 1M + Opus 4.6 1M + Sonnet 1M + Haiku
+  if (getAPIProvider() === 'firstParty') {
+    const payg1POptions = [getDefaultOptionForUser(fastMode)]
+    if (isOpus1mMergeEnabled()) {
+      payg1POptions.push(getMergedOpus1MOption(fastMode))
+    } else {
+      payg1POptions.push(getOpus47Option(fastMode))
+      if (checkOpus1mAccess()) {
+        payg1POptions.push(getOpus47_1MOption(fastMode))
+      }
     }
-    // 缓存尚未加载（启动时预取未完成），显示提示而非标准模型列表
-    return [
-      {
-        value: null,
-        label: 'CoStrict (loading models...)',
-        description:
-          'CoStrict models are being loaded, please try again in a moment',
-      },
-    ]
+    payg1POptions.push(getOpus46_1MOption(fastMode))
+    if (checkSonnet1mAccess()) {
+      payg1POptions.push(getSonnet46_1MOption())
+    }
+    payg1POptions.push(getHaiku45Option())
+    return payg1POptions
   }
 
-  // PAYG 用户：展示标准模型选项（Sonnet, Opus, Haiku 等）
-  const paygOptions = [getDefaultOptionForUser(fastMode)]
+  // PAYG 3P: Default (Sonnet 4.5) + Sonnet (3P custom) or Sonnet 4.6/1M + Opus (3P custom) or Opus 4.7/Opus 4.6 Legacy/Opus 4.7 1M + Haiku
+  const payg3pOptions = [getDefaultOptionForUser(fastMode)]
+
   const customSonnet = getCustomSonnetOption()
-  if (customSonnet) {
-    paygOptions.push(customSonnet)
+  if (customSonnet !== undefined) {
+    payg3pOptions.push(customSonnet)
   } else {
-    paygOptions.push(getSonnet46Option())
+    // Add Sonnet 4.6 since Sonnet 4.5 is the default
+    payg3pOptions.push(getSonnet46Option())
+    if (checkSonnet1mAccess()) {
+      payg3pOptions.push(getSonnet46_1MOption())
+    }
   }
+
   const customOpus = getCustomOpusOption()
-  if (customOpus) {
-    paygOptions.push(customOpus)
+  if (customOpus !== undefined) {
+    payg3pOptions.push(customOpus)
   } else {
-    paygOptions.push(getOpus46Option(fastMode))
+    // Add Opus 4.7 1M + Opus 4.6 1M (no redundant non-1M entries)
+    payg3pOptions.push(getOpus47_1MOption(fastMode))
+    payg3pOptions.push(getOpus46_1MOption(fastMode))
   }
   const customHaiku = getCustomHaikuOption()
-  if (customHaiku) {
-    paygOptions.push(customHaiku)
+  if (customHaiku !== undefined) {
+    payg3pOptions.push(customHaiku)
   } else {
-    paygOptions.push(getHaikuOption())
+    payg3pOptions.push(getHaikuOption())
   }
-  return paygOptions
+  return payg3pOptions
 }
 
 // @[MODEL LAUNCH]: Add the new model ID to the appropriate family pattern below
@@ -540,31 +560,45 @@ export function getModelOptions(fastMode = false): ModelOption[] {
     }
   }
 
-  // Add ANTHROPIC_MODEL env var model as a custom option, but only for
-  // anthropic-compatible providers. settings.model is NOT added here.
-  const provider = getAPIProvider()
-  const envModel =
-    provider === 'firstParty' ||
-    provider === 'bedrock' ||
-    provider === 'vertex' ||
-    provider === 'foundry'
-      ? process.env.ANTHROPIC_MODEL
-      : undefined
-
-  if (envModel && !options.some(opt => opt.value === envModel)) {
-    const knownOption = getKnownModelOption(envModel)
+  // Add custom model from either the current model value or the initial one
+  // if it is not already in the options.
+  let customModel: ModelSetting = null
+  const currentMainLoopModel = getUserSpecifiedModelSetting()
+  const initialMainLoopModel = getInitialMainLoopModel()
+  if (currentMainLoopModel !== undefined && currentMainLoopModel !== null) {
+    customModel = currentMainLoopModel
+  } else if (initialMainLoopModel !== null) {
+    customModel = initialMainLoopModel
+  }
+  if (customModel === null || options.some(opt => opt.value === customModel)) {
+    return filterModelOptionsByAllowlist(options)
+  } else if (customModel === 'opusplan') {
+    return filterModelOptionsByAllowlist([...options, getOpusPlanOption()])
+  } else if (customModel === 'opus' && getAPIProvider() === 'firstParty') {
+    return filterModelOptionsByAllowlist([
+      ...options,
+      getMaxOpusOption(fastMode),
+    ])
+  } else if (customModel === 'opus[1m]' && getAPIProvider() === 'firstParty') {
+    return filterModelOptionsByAllowlist([
+      ...options,
+      getMergedOpus1MOption(fastMode),
+    ])
+  } else {
+    // Try to show a human-readable label for known Anthropic models, with an
+    // upgrade hint if the alias now resolves to a newer version.
+    const knownOption = getKnownModelOption(customModel)
     if (knownOption) {
       options.push(knownOption)
     } else {
       options.push({
-        value: envModel,
-        label: envModel,
-        description: 'Custom model (ANTHROPIC_MODEL)',
+        value: customModel,
+        label: customModel,
+        description: 'Custom model',
       })
     }
+    return filterModelOptionsByAllowlist(options)
   }
-
-  return filterModelOptionsByAllowlist(options)
 }
 
 /**
