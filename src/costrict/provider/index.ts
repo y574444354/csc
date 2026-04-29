@@ -16,6 +16,7 @@ import type { Tools } from '../../Tool.js'
 import type { Options } from '../../services/api/claude.js'
 import OpenAI from 'openai'
 import { getProxyFetchOptions } from '../../utils/proxy.js'
+import { getUserAgent } from '../../utils/http.js'
 import { anthropicMessagesToOpenAI, anthropicToolsToOpenAI, anthropicToolChoiceToOpenAI, adaptOpenAIStreamToAnthropic } from '@ant/model-provider'
 import { normalizeMessagesForAPI } from '../../utils/messages.js'
 import { toolToAPISchema } from '../../utils/api.js'
@@ -103,6 +104,7 @@ export async function* queryModelCoStrict(
         forAnthropicAPI: false,
       }) as any,
       fetch: costrictFetch as any,
+      defaultHeaders: { 'User-Agent': getUserAgent() },
     })
 
     logForDebugging(

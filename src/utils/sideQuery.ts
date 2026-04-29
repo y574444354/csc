@@ -32,6 +32,7 @@ import { resolveCoStrictModel } from '../costrict/provider/modelMapping.js'
 import { getCoStrictBaseURL } from '../costrict/provider/auth.js'
 import { loadCoStrictCredentials } from '../costrict/provider/credentials.js'
 import { getProxyFetchOptions } from './proxy.js'
+import { getUserAgent } from './http.js'
 import { getMainLoopModel } from './model/model.js'
 import OpenAI from 'openai'
 
@@ -145,6 +146,7 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
       dangerouslyAllowBrowser: true,
       fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as Record<string, unknown>,
       fetch: createCoStrictFetch() as unknown as typeof fetch,
+      defaultHeaders: { 'User-Agent': getUserAgent() },
     })
     return sideQueryOpenAICompat(opts, client, resolveCoStrictModel(getMainLoopModel()), 'CoStrict')
   }

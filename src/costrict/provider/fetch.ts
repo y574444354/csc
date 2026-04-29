@@ -89,6 +89,7 @@ export function createCoStrictFetch(): CoStrictFetch {
     // ========== 步骤 3: 构建 headers ==========
     const headers = new Headers(init?.headers)
     headers.set('Authorization', `Bearer ${creds.access_token}`)
+    headers.set('User-Agent', `csc/${VERSION}`)
     headers.set('HTTP-Referer', 'https://github.com/zgsm-ai/costrict-cli')
     headers.set('X-Title', 'CoStrict-CLI')
     headers.set('X-Costrict-Version', `costrict-cli-${VERSION}`)
