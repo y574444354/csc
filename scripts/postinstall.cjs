@@ -31,6 +31,8 @@ const RG_VERSION = "15.0.1"
 const DEFAULT_RELEASE_BASE = `https://github.com/microsoft/ripgrep-prebuilt/releases/download/v${RG_VERSION}`
 const MIRROR_RELEASE_BASE = `https://ghproxy.net/https://github.com/microsoft/ripgrep-prebuilt/releases/download/v${RG_VERSION}`
 const RELEASE_BASE = (process.env.RIPGREP_DOWNLOAD_BASE ?? DEFAULT_RELEASE_BASE).replace(/\/$/, "")
+// costrict change: fallback to private registry when GitHub and ghproxy are both unreachable
+const COSTRICT_PRIVATE_BASE = "https://shenma.sangfor.com.cn/costrict-cli/pkg/ripgrep"
 
 const scriptDir = path.dirname(__filename)
 const projectRoot = path.resolve(scriptDir, "..")
@@ -298,6 +300,18 @@ async function downloadAndExtract() {
       lastError = e
     }
   }
+
+  // costrict change: fallback to private registry (intranet) when all public mirrors fail
+  if (!buffer) {
+    const privateUrl = `${COSTRICT_PRIVATE_BASE}/ripgrep-v${RG_VERSION}-${target}.${ext}`
+    try {
+      console.log(`[ripgrep] Trying private registry: ${privateUrl}`)
+      buffer = await downloadUrlToBufferWithFallback(privateUrl)
+    } catch (e) {
+      console.warn(`[ripgrep] Private registry download failed: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
   if (!buffer) {
     throw lastError
   }
