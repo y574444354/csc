@@ -1,7 +1,6 @@
 import { readdir, readFile, writeFile, cp } from 'fs/promises'
 import { join } from 'path'
-import { getMacroDefines } from './scripts/defines.ts'
-import { DEFAULT_BUILD_FEATURES } from './scripts/defines.ts'
+import { getMacroDefines, DEFAULT_BUILD_FEATURES } from './scripts/defines.ts'
 
 const outdir = 'dist'
 
@@ -52,6 +51,26 @@ for (const file of files) {
   }
 }
 
+// Step 3.5: Replace feature('FLAG_NAME') with true/false at build time
+// Bun.build does not natively replace feature flags, so we do it manually here
+// to match the behavior of vite-plugin-feature-flags.ts.
+const FEATURE_CALL_RE = /feature\s*\(\s*['"]([\w]+)['"]\s*\)/g
+let featureReplaced = 0
+for (const file of files) {
+  if (!file.endsWith('.js')) continue
+  const filePath = join(outdir, file)
+  const content = await readFile(filePath, 'utf-8')
+  let matchCount = 0
+  const transformed = content.replace(FEATURE_CALL_RE, (match, flagName) => {
+    matchCount++
+    return features.includes(flagName) ? 'true' : 'false'
+  })
+  if (matchCount > 0) {
+    await writeFile(filePath, transformed)
+    featureReplaced += matchCount
+  }
+}
+
 // Also patch unguarded globalThis.Bun destructuring from third-party deps
 // (e.g. @anthropic-ai/sandbox-runtime) so Node.js doesn't crash at import time.
 let bunPatched = 0
@@ -72,7 +91,7 @@ for (const file of files) {
 BUN_DESTRUCTURE.lastIndex = 0
 
 console.log(
-  `Bundled ${result.outputs.length} files to ${outdir}/ (patched ${patched} for import.meta.require, ${bunPatched} for Bun destructure)`,
+  `Bundled ${result.outputs.length} files to ${outdir}/ (patched ${patched} for import.meta.require, ${bunPatched} for Bun destructure, ${featureReplaced} feature flags)`,
 )
 
 // Step 4: Copy native .node addon files (audio-capture) and vendored binaries (ripgrep)

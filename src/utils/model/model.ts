@@ -153,8 +153,9 @@ export function getDefaultOpusModel(): ModelName {
 // @[MODEL LAUNCH]: Update the default Sonnet model (3P providers may lag so keep defaults unchanged).
 export function getDefaultSonnetModel(): ModelName {
   const provider = getAPIProvider()
-  // CoStrict has no sonnet alias — use the main loop model to stay on the same provider
-  if (provider === 'costrict') return getMainLoopModel()
+  // CoStrict has no sonnet alias — return a concrete default to avoid recursive
+  // resolution (getMainLoopModel → getDefaultMainLoopModel → getDefaultSonnetModel).
+  if (provider === 'costrict') return getModelStrings().sonnet46
   // For OpenAI provider, check OPENAI_DEFAULT_SONNET_MODEL first
   if (provider === 'openai' && process.env.OPENAI_DEFAULT_SONNET_MODEL) {
     return process.env.OPENAI_DEFAULT_SONNET_MODEL
@@ -177,8 +178,9 @@ export function getDefaultSonnetModel(): ModelName {
 // @[MODEL LAUNCH]: Update the default Haiku model (3P providers may lag so keep defaults unchanged).
 export function getDefaultHaikuModel(): ModelName {
   const provider = getAPIProvider()
-  // CoStrict has no haiku alias — use the main loop model to stay on the same provider
-  if (provider === 'costrict') return getMainLoopModel()
+  // CoStrict has no haiku alias — return a concrete default to avoid recursive
+  // resolution (getMainLoopModel → getDefaultMainLoopModel → getDefaultHaikuModel).
+  if (provider === 'costrict') return getModelStrings().haiku45
   // For OpenAI provider, check OPENAI_DEFAULT_HAIKU_MODEL first
   if (provider === 'openai' && process.env.OPENAI_DEFAULT_HAIKU_MODEL) {
     return process.env.OPENAI_DEFAULT_HAIKU_MODEL

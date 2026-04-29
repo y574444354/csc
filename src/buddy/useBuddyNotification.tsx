@@ -15,11 +15,8 @@ export function isBuddyTeaserWindow(): boolean {
 }
 
 export function isBuddyLive(): boolean {
-  if (process.env.USER_TYPE === 'ant') return true
-  const d = new Date()
-  return (
-    d.getFullYear() > 2026 || (d.getFullYear() === 2026 && d.getMonth() >= 3)
-  )
+  // BUDDY 功能已默认启用，不再受日期限制
+  return true
 }
 
 function RainbowText({ text }: { text: string }): React.ReactNode {
