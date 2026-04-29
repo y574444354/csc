@@ -24,6 +24,16 @@ import { errorMessage } from './errors.js'
 import { computeFingerprint } from './fingerprint.js'
 import { getAPIProvider } from './model/providers.js'
 import { normalizeModelStringForAPI } from './model/model.js'
+import { sideQueryOpenAICompat } from './sideQueryOpenAICompat.js'
+import { getOpenAIClient } from '../services/api/openai/client.js'
+import { resolveOpenAIModel } from '@ant/model-provider'
+import { createCoStrictFetch } from '../costrict/provider/fetch.js'
+import { resolveCoStrictModel } from '../costrict/provider/modelMapping.js'
+import { getCoStrictBaseURL } from '../costrict/provider/auth.js'
+import { loadCoStrictCredentials } from '../costrict/provider/credentials.js'
+import { getProxyFetchOptions } from './proxy.js'
+import { getMainLoopModel } from './model/model.js'
+import OpenAI from 'openai'
 
 type MessageParam = Anthropic.MessageParam
 type TextBlockParam = Anthropic.TextBlockParam
@@ -117,6 +127,28 @@ function extractFirstUserMessageText(messages: MessageParam[]): string {
  * await sideQuery({ querySource: 'model_validation', model, max_tokens: 1, messages: [{ role: 'user', content: 'Hi' }] })
  */
 export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
+  const provider = getAPIProvider()
+
+  if (provider === 'openai') {
+    const client = getOpenAIClient({ maxRetries: opts.maxRetries ?? 2 })
+    return sideQueryOpenAICompat(opts, client, resolveOpenAIModel(opts.model), 'OpenAI')
+  }
+
+  if (provider === 'costrict') {
+    const creds = await loadCoStrictCredentials()
+    const baseUrl = getCoStrictBaseURL(creds?.base_url)
+    const client = new OpenAI({
+      apiKey: 'costrict-managed',
+      baseURL: `${baseUrl}/chat-rag/api/v1`,
+      maxRetries: 0,
+      timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
+      dangerouslyAllowBrowser: true,
+      fetchOptions: getProxyFetchOptions({ forAnthropicAPI: false }) as Record<string, unknown>,
+      fetch: createCoStrictFetch() as unknown as typeof fetch,
+    })
+    return sideQueryOpenAICompat(opts, client, resolveCoStrictModel(getMainLoopModel()), 'CoStrict')
+  }
+
   const {
     model,
     system,
@@ -189,7 +221,6 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
   }
 
   const normalizedModel = normalizeModelStringForAPI(model)
-  const provider = getAPIProvider()
   const start = Date.now()
   const traceName = `side-query:${opts.querySource}`
 

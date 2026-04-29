@@ -1368,6 +1368,7 @@ function OAuthStatusMessage({
               options={costrictOptions}
               onChange={(value: string) => {
                 process.env.COSTRICT_MODEL = value;
+                updateSettingsForSource('userSettings', { model: value } as any)
                 setAppState(prev => ({ ...prev, mainLoopModel: value, mainLoopModelForSession: null }));
                 setOAuthStatus({ state: 'success' });
                 void onDone();
@@ -1375,6 +1376,7 @@ function OAuthStatusMessage({
               onCancel={() => {
                 const selected = sortedModels[0]?.id ?? '';
                 process.env.COSTRICT_MODEL = selected;
+                updateSettingsForSource('userSettings', { model: selected } as any)
                 setAppState(prev => ({ ...prev, mainLoopModel: selected, mainLoopModelForSession: null }));
                 setOAuthStatus({ state: 'success' });
                 void onDone();
