@@ -4992,7 +4992,7 @@ async function run(): Promise<CommanderCommand> {
 					}
 				}
 
-				// --remote and --teleport both create/resume Claude Code Web (CCR) sessions.
+				// --remote and --teleport both create/resume CoStrict remote sessions.
 				// Remote Control (--rc) is a separate feature gated in initReplBridge.ts.
 				if (remote !== null || teleport) {
 					await waitForPolicyLimitsToLoad();
@@ -6722,14 +6722,6 @@ async function run(): Promise<CommanderCommand> {
 			},
 		);
 
-	// claude update — update ccb to the latest version via npm or bun
-	program
-		.command("update")
-		.description("Update claude-code-best (ccb) to the latest version")
-		.action(async () => {
-			const { updateCCB } = await import("./cli/updateCCB.js");
-			await updateCCB();
-		});
 
 	// ant-only commands
 	if (process.env.USER_TYPE === "ant") {

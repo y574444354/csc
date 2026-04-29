@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     (args[0] === '--version' || args[0] === '-v' || args[0] === '-V')
   ) {
     // MACRO.VERSION is inlined at build time
-    console.log(`${MACRO.VERSION} (Claude Code)`)
+    console.log(`${MACRO.VERSION} (csc)`)
     return
   }
 

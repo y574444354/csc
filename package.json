@@ -1,20 +1,20 @@
 {
   "name": "@costrict/csc",
-  "version": "4.0.12",
+  "version": "4.0.13-beta.0",
   "description": "costrict",
   "type": "module",
-  "author": "claude-code-best <claude-code-best@proton.me>",
+  "author": "costrict",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/claude-code-best/claude-code.git"
+    "url": "git+https://github.com/y574444354/csc.git"
   },
-  "homepage": "https://github.com/claude-code-best/claude-code#readme",
+  "homepage": "https://github.com/y574444354/csc#readme",
   "bugs": {
-    "url": "https://github.com/claude-code-best/claude-code/issues"
+    "url": "https://github.com/y574444354/csc/issues"
   },
   "keywords": [
-    "claude",
-    "anthropic",
+    "csc",
+    "CoStrict",
     "cli",
     "ai",
     "coding-assistant",
