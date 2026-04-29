@@ -123,6 +123,7 @@ export const CLAUDE_OPUS_4_7_CONFIG = {
   foundry: 'claude-opus-4-7',
   openai: 'claude-opus-4-7',
   gemini: 'claude-opus-4-7',
+  costrict: 'claude-opus-4-7',
   grok: 'claude-opus-4-7',
 } as const satisfies ModelConfig
 

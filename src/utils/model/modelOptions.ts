@@ -1,5 +1,6 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { getInitialMainLoopModel } from '../../bootstrap/state.js'
+import { getCachedCoStrictModels } from '../../costrict/provider/models.js'
 import {
   isClaudeAISubscriber,
   isMaxSubscriber,
@@ -402,6 +403,23 @@ function getModelOptionsBase(fastMode = false): ModelOption[] {
     return standardOptions
   }
 
+  // CoStrict provider: 用从服务器拉回的模型列表并按 id 排序，缓存为空时返回空列表
+  if (getAPIProvider() === 'costrict') {
+    const costrictModels = getCachedCoStrictModels()
+    const sorted = [...costrictModels].sort((a, b) => a.id.localeCompare(b.id))
+    return sorted.map(m => {
+      const description =
+        m.id === 'Auto'
+          ? `${Math.round((m.creditDiscount ?? 0) * 100)}% discount`
+          : `${m.creditConsumption ?? '?'}x credit`
+      return {
+        value: m.id,
+        label: m.id,
+        description,
+      }
+    })
+  }
+
   // PAYG 1P API: Default (Sonnet) + Opus 4.7 1M + Opus 4.6 1M + Sonnet 1M + Haiku
   if (getAPIProvider() === 'firstParty') {
     const payg1POptions = [getDefaultOptionForUser(fastMode)]
@@ -562,43 +580,56 @@ export function getModelOptions(fastMode = false): ModelOption[] {
 
   // Add custom model from either the current model value or the initial one
   // if it is not already in the options.
-  let customModel: ModelSetting = null
-  const currentMainLoopModel = getUserSpecifiedModelSetting()
-  const initialMainLoopModel = getInitialMainLoopModel()
-  if (currentMainLoopModel !== undefined && currentMainLoopModel !== null) {
-    customModel = currentMainLoopModel
-  } else if (initialMainLoopModel !== null) {
-    customModel = initialMainLoopModel
-  }
-  if (customModel === null || options.some(opt => opt.value === customModel)) {
-    return filterModelOptionsByAllowlist(options)
-  } else if (customModel === 'opusplan') {
-    return filterModelOptionsByAllowlist([...options, getOpusPlanOption()])
-  } else if (customModel === 'opus' && getAPIProvider() === 'firstParty') {
-    return filterModelOptionsByAllowlist([
-      ...options,
-      getMaxOpusOption(fastMode),
-    ])
-  } else if (customModel === 'opus[1m]' && getAPIProvider() === 'firstParty') {
-    return filterModelOptionsByAllowlist([
-      ...options,
-      getMergedOpus1MOption(fastMode),
-    ])
-  } else {
-    // Try to show a human-readable label for known Anthropic models, with an
-    // upgrade hint if the alias now resolves to a newer version.
-    const knownOption = getKnownModelOption(customModel)
-    if (knownOption) {
-      options.push(knownOption)
-    } else {
-      options.push({
-        value: customModel,
-        label: customModel,
-        description: 'Custom model',
-      })
+  // Only applies to Anthropic-compatible providers (firstParty/bedrock/vertex/foundry).
+  // For CoStrict/OpenAI/Gemini/Grok, the model list comes from additionalModelOptionsCache
+  // or getModelOptionsBase(), so we must not inject ANTHROPIC_MODEL / settings.model here.
+  const currentProvider = getAPIProvider()
+  const isAnthropicCompatible =
+    currentProvider === 'firstParty' ||
+    currentProvider === 'bedrock' ||
+    currentProvider === 'vertex' ||
+    currentProvider === 'foundry'
+
+  if (isAnthropicCompatible) {
+    let customModel: ModelSetting = null
+    const currentMainLoopModel = getUserSpecifiedModelSetting()
+    const initialMainLoopModel = getInitialMainLoopModel()
+    if (currentMainLoopModel !== undefined && currentMainLoopModel !== null) {
+      customModel = currentMainLoopModel
+    } else if (initialMainLoopModel !== null) {
+      customModel = initialMainLoopModel
     }
-    return filterModelOptionsByAllowlist(options)
+    if (customModel !== null && !options.some(opt => opt.value === customModel)) {
+      if (customModel === 'opusplan') {
+        return filterModelOptionsByAllowlist([...options, getOpusPlanOption()])
+      } else if (customModel === 'opus') {
+        return filterModelOptionsByAllowlist([
+          ...options,
+          getMaxOpusOption(fastMode),
+        ])
+      } else if (customModel === 'opus[1m]') {
+        return filterModelOptionsByAllowlist([
+          ...options,
+          getMergedOpus1MOption(fastMode),
+        ])
+      } else {
+        // Try to show a human-readable label for known Anthropic models, with an
+        // upgrade hint if the alias now resolves to a newer version.
+        const knownOption = getKnownModelOption(customModel)
+        if (knownOption) {
+          options.push(knownOption)
+        } else {
+          options.push({
+            value: customModel,
+            label: customModel,
+            description: 'Custom model',
+          })
+        }
+      }
+    }
   }
+
+  return filterModelOptionsByAllowlist(options)
 }
 
 /**

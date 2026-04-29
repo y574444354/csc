@@ -29,6 +29,21 @@ import {
 } from '../../utils/model/model.js'
 import { isModelAllowed } from '../../utils/model/modelAllowlist.js'
 import { validateModel } from '../../utils/model/validateModel.js'
+import { isNotLoggedIn } from '../../utils/logoV2Utils.js'
+import {
+  buildCoStrictLoginURL,
+  generateState,
+  getCoStrictBaseURL,
+  pollLoginToken,
+} from '../../costrict/provider/auth.js'
+import {
+  generateMachineId,
+  saveCoStrictCredentials,
+} from '../../costrict/provider/credentials.js'
+import { extractExpiryFromJWT } from '../../costrict/provider/token.js'
+import { updateSettingsForSource } from '../../utils/settings/settings.js'
+import { openBrowser } from '../../utils/browser.js'
+import { getAPIProvider } from '../../utils/model/providers.js'
 
 function ModelPickerWrapper({
   onDone,
@@ -42,6 +57,7 @@ function ModelPickerWrapper({
   const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession)
   const isFastMode = useAppState(s => s.fastMode)
   const setAppState = useSetAppState()
+  const [pickerKey, setPickerKey] = React.useState(0)
 
   function handleCancel(): void {
     logEvent('tengu_model_command_menu', {
@@ -58,6 +74,57 @@ function ModelPickerWrapper({
     model: string | null,
     effort: EffortLevel | undefined,
   ): void {
+    // CoStrict 登录流程
+    if (model === 'costrict-login') {
+      void (async () => {
+        try {
+          const baseUrl = getCoStrictBaseURL()
+          const state = generateState()
+          const machineId = generateMachineId()
+          const loginUrl = buildCoStrictLoginURL(baseUrl, state, machineId)
+
+          // 打开浏览器（不调用 onDone，保持 picker 显示）
+          await openBrowser(loginUrl)
+
+          // 轮询等待登录完成
+          const tokens = await pollLoginToken(baseUrl, state, machineId)
+
+          // 保存凭证
+          const expiryDate = extractExpiryFromJWT(tokens.access_token)
+          await saveCoStrictCredentials({
+            id: 'csc',
+            name: 'CSC Auth',
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            state,
+            machine_id: machineId,
+            base_url: baseUrl,
+            expiry_date: expiryDate,
+            updated_at: new Date().toISOString(),
+            expired_at: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          })
+
+          // 设置 modelType 为 costrict
+          updateSettingsForSource('userSettings', { modelType: 'costrict' as any } as any)
+          process.env.CLAUDE_CODE_USE_COSTRICT = '1'
+
+          // 预取并缓存模型列表
+          try {
+            const { fetchCoStrictModels } = await import('../../costrict/provider/models.js')
+            await fetchCoStrictModels(baseUrl, tokens.access_token)
+          } catch {
+            // 预取失败，picker 重载后会显示默认模型列表
+          }
+
+          // 登录成功后重载 ModelPicker，显示 CoStrict 模型选择界面
+          setPickerKey(k => k + 1)
+        } catch (err: any) {
+          onDone(`Login failed: ${err.message || String(err)}`, { display: 'system' })
+        }
+      })()
+      return
+    }
+
     logEvent('tengu_model_command_menu', {
       action:
         model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -71,6 +138,11 @@ function ModelPickerWrapper({
       mainLoopModel: model,
       mainLoopModelForSession: null,
     }))
+
+    // CoStrict provider 下持久化模型选择到 settings.json
+    if (getAPIProvider() === 'costrict') {
+      updateSettingsForSource('userSettings', { model: model ?? undefined } as any)
+    }
 
     let message = `Set model to ${chalk.bold(renderModelLabel(model))}`
     if (effort !== undefined) {
@@ -118,6 +190,7 @@ function ModelPickerWrapper({
 
   return (
     <ModelPicker
+      key={pickerKey}
       initial={mainLoopModel}
       sessionModel={mainLoopModelForSession}
       onSelect={handleSelect}
@@ -324,6 +397,14 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       args: args as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     })
     return <SetModelAndClose args={args} onDone={onDone} />
+  }
+
+  // Check if user is logged in before showing model picker
+  if (isNotLoggedIn()) {
+    onDone('You need to login first. Use /login to authenticate.', {
+      display: 'system',
+    })
+    return
   }
 
   return <ModelPickerWrapper onDone={onDone} />
